@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "../constants/theme";
-
+import { ProgressBar } from "react-native-paper";
 export default function Home() {
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -15,22 +15,37 @@ export default function Home() {
 
         {/* Monthly Budget AI */}
         <View style={styles.monthlyBudget}>
-          <View style={styles.row}>
-            <Text style={styles.text}>Monthly Budget</Text>
-            <Text style={styles.text}>₹12,400 left</Text>
+          <View style={[styles.row, styles.monthlyBudgetHeader]}>
+            <Text style={styles.monthlyBudgetText}>Monthly Budget</Text>
+            <Text style={styles.monthlyBudgetValue}>₹12,400 left</Text>
           </View>
 
-          <Text style={styles.text}>Goal : ₹45,0000.00</Text>
+          <Text style={styles.goalText}>Goal : ₹45,0000.00</Text>
 
-          <View>{/* Progress bar */}</View>
+          <View style={{ width: "90%", paddingHorizontal: 8, marginTop: 8 }}>
+            <ProgressBar progress={0.3} color="#E8A045" />
+            <View
+              style={[
+                styles.row,
+                {
+                  justifyContent: "space-between",
+                  marginTop: 4,
+                  marginBottom: 20,
+                },
+              ]}
+            >
+              <Text style={styles.progressPercentage}>72% spent</Text>
+              <Text style={styles.daysRemaining}>21 DAYS REMAINING</Text>
+            </View>
+          </View>
 
-          <View style={styles.row}>
-            <View>
+          <View style={styles.stats}>
+            <View style={{ width: "50%", marginLeft: 24 }}>
               <Text style={styles.text}>AVG.DAILY</Text>
               <Text style={styles.text}>₹1,550</Text>
             </View>
 
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.text}>PREDICTED</Text>
               <Text style={styles.text}>₹42,500</Text>
             </View>
@@ -66,8 +81,35 @@ const styles = StyleSheet.create({
   monthlyBudget: {
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#1E2025",
+    marginHorizontal: 18,
+    marginVertical: 8,
+    paddingVertical: 20,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#524437",
   },
-
+  monthlyBudgetHeader: {
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 60,
+    marginBottom: 4,
+  },
+  monthlyBudgetText: {
+    color: "#E2E2E9",
+    fontSize: 20,
+  },
+  monthlyBudgetValue: {
+    color: "#FFBE71",
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  goalText: {
+    alignSelf: "flex-start",
+    color: "#E2E2E9",
+    marginLeft: 20,
+    marginBottom: 16,
+  },
   aiInsights: {
     justifyContent: "center",
     alignItems: "center",
@@ -79,7 +121,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
   },
-
+  stats: {
+    flexDirection: "row",
+    width: "100%",
+    justifyContent: "space-around",
+  },
+  progressPercentage: {
+    color: "#D6C3B1",
+    fontSize: 12,
+  },
+  daysRemaining: {
+    color: "#D6C3B1",
+    fontSize: 12,
+  },
   text: {
     color: "white",
   },
