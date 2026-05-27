@@ -7,14 +7,16 @@ export default function Home() {
     <SafeAreaView style={{ flex: 1 }}>
       <View style={styles.main}>
         {/* Daily Average Spending */}
-        <View style={styles.dailySpending}>
-          <Text style={styles.text}>Daily Average Spending</Text>
-          <Text style={styles.text}>₹ 1,420.50</Text>
+        <View style={styles.card}>
+          <Text style={styles.text}>DAILY SPENT</Text>
+          <Text style={styles.dailySpentValue}>
+            <Text style={{ color: "#FFBE71" }}>₹</Text> 1,420.50
+          </Text>
           <Text style={styles.text}>You spent 12% more than daily average</Text>
         </View>
 
         {/* Monthly Budget AI */}
-        <View style={styles.monthlyBudget}>
+        <View style={styles.card}>
           <View style={[styles.row, styles.monthlyBudgetHeader]}>
             <Text style={styles.monthlyBudgetText}>Monthly Budget</Text>
             <Text style={styles.monthlyBudgetValue}>₹12,400 left</Text>
@@ -53,13 +55,15 @@ export default function Home() {
         </View>
 
         {/* AI Insights */}
-        <View style={styles.aiInsights}>
-          <Text style={styles.text}>AI INSIGHT</Text>
-          <Text style={styles.text}>
-            "Your subscription spending has increased by 14% this month.
-            Consider reviewing your active streaming services to save
-            approximately ₹850 before next billing cycle."
-          </Text>
+        <View style={[styles.card, { gap: 8 }]}>
+          <Text style={styles.AiInsightTitle}>AI INSIGHT</Text>
+          <View style={styles.AiInsightValueContainer}>
+            <Text style={styles.AiInsightValue}>
+              "Your subscription spending has increased by 14% this month.
+              Consider reviewing your active streaming services to save
+              approximately ₹850 before next billing cycle."
+            </Text>
+          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -78,7 +82,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  monthlyBudget: {
+  card: {
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#1E2025",
@@ -134,7 +138,25 @@ const styles = StyleSheet.create({
     color: "#D6C3B1",
     fontSize: 12,
   },
+  dailySpentValue: {
+    color: "#FFBE71",
+    fontSize: 24,
+    fontWeight: "bold",
+  },
   text: {
     color: "white",
   },
+  AiInsightTitle: {
+    color: "#",
+    alignSelf: "flex-start",
+    marginLeft: 20,
+  },
+  AiInsightValue: {
+    color: "#E2E2E9",
+    fontStyle: "italic",
+  },
+  AiInsightValueContainer: {
+    marginHorizontal: 20,
+  },
 });
+FFBE71;
