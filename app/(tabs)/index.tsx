@@ -2,17 +2,19 @@ import { View, Text, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "../constants/theme";
 import { ProgressBar } from "react-native-paper";
+import Header from "../common/Header";
 export default function Home() {
   return (
     <SafeAreaView style={{ flex: 1 }}>
+      <Header />
       <View style={styles.main}>
         {/* Daily Average Spending */}
         <View style={styles.card}>
-          <Text style={styles.text}>DAILY SPENT</Text>
-          <Text style={styles.dailySpentValue}>
-            <Text style={{ color: "#FFBE71" }}>₹</Text> 1,420.50
+          <Text style={styles.dailySpentText}>DAILY SPEND</Text>
+          <Text style={styles.dailySpentValue}>₹ 1,420.50</Text>
+          <Text style={styles.dailySpentAnalysis}>
+            You spent 12% more than daily average
           </Text>
-          <Text style={styles.text}>You spent 12% more than daily average</Text>
         </View>
 
         {/* Monthly Budget AI */}
@@ -99,6 +101,19 @@ const styles = StyleSheet.create({
     gap: 60,
     marginBottom: 4,
   },
+  dailySpentText: {
+    fontSize: 12,
+    color: "#ffffff",
+  },
+  dailySpentValue: {
+    color: "#FFBE71",
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+  dailySpentAnalysis: {
+    fontSize: 12,
+    color: "#D6C3B1",
+  },
   monthlyBudgetText: {
     color: "#E2E2E9",
     fontSize: 20,
@@ -147,7 +162,7 @@ const styles = StyleSheet.create({
     color: "white",
   },
   AiInsightTitle: {
-    color: "#",
+    color: "#FFBE71",
     alignSelf: "flex-start",
     marginLeft: 20,
   },
@@ -159,4 +174,3 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
   },
 });
-FFBE71;
