@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "../constants/theme";
 import { ProgressBar } from "react-native-paper";
@@ -7,67 +7,69 @@ export default function Home() {
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <Header />
-      <View style={styles.main}>
-        {/* Daily Average Spending */}
-        <View style={styles.card}>
-          <Text style={styles.dailySpentText}>DAILY SPEND</Text>
-          <Text style={styles.dailySpentValue}>₹ 1,420.50</Text>
-          <Text style={styles.dailySpentAnalysis}>
-            You spent 12% more than daily average
-          </Text>
-        </View>
-
-        {/* Monthly Budget AI */}
-        <View style={styles.card}>
-          <View style={[styles.row, styles.monthlyBudgetHeader]}>
-            <Text style={styles.monthlyBudgetText}>Monthly Budget</Text>
-            <Text style={styles.monthlyBudgetValue}>₹12,400 left</Text>
-          </View>
-
-          <Text style={styles.goalText}>Goal : ₹45,0000.00</Text>
-
-          <View style={{ width: "90%", paddingHorizontal: 8, marginTop: 8 }}>
-            <ProgressBar progress={0.3} color="#E8A045" />
-            <View
-              style={[
-                styles.row,
-                {
-                  justifyContent: "space-between",
-                  marginTop: 4,
-                  marginBottom: 20,
-                },
-              ]}
-            >
-              <Text style={styles.progressPercentage}>72% spent</Text>
-              <Text style={styles.daysRemaining}>21 DAYS REMAINING</Text>
-            </View>
-          </View>
-
-          <View style={styles.stats}>
-            <View style={{ width: "50%", marginLeft: 24 }}>
-              <Text style={styles.text}>AVG.DAILY</Text>
-              <Text style={styles.text}>₹1,550</Text>
-            </View>
-
-            <View style={{ flex: 1 }}>
-              <Text style={styles.text}>PREDICTED</Text>
-              <Text style={styles.text}>₹42,500</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* AI Insights */}
-        <View style={[styles.card, { gap: 8 }]}>
-          <Text style={styles.AiInsightTitle}>AI INSIGHT</Text>
-          <View style={styles.AiInsightValueContainer}>
-            <Text style={styles.AiInsightValue}>
-              "Your subscription spending has increased by 14% this month.
-              Consider reviewing your active streaming services to save
-              approximately ₹850 before next billing cycle."
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <View style={styles.main}>
+          {/* Daily Average Spending */}
+          <View style={[styles.card, { marginTop: 30 }]}>
+            <Text style={styles.dailySpentText}>DAILY SPEND</Text>
+            <Text style={styles.dailySpentValue}>₹ 1,420.50</Text>
+            <Text style={styles.dailySpentAnalysis}>
+              You spent 12% more than daily average
             </Text>
           </View>
+
+          {/* Monthly Budget AI */}
+          <View style={styles.card}>
+            <View style={[styles.row, styles.monthlyBudgetHeader]}>
+              <Text style={styles.monthlyBudgetText}>Monthly Budget</Text>
+              <Text style={styles.monthlyBudgetValue}>₹12,400 left</Text>
+            </View>
+
+            <Text style={styles.goalText}>Goal : ₹45,0000.00</Text>
+
+            <View style={{ width: "90%", paddingHorizontal: 8, marginTop: 8 }}>
+              <ProgressBar progress={0.3} color="#E8A045" />
+              <View
+                style={[
+                  styles.row,
+                  {
+                    justifyContent: "space-between",
+                    marginTop: 4,
+                    marginBottom: 20,
+                  },
+                ]}
+              >
+                <Text style={styles.progressPercentage}>72% spent</Text>
+                <Text style={styles.daysRemaining}>21 DAYS REMAINING</Text>
+              </View>
+            </View>
+
+            <View style={styles.stats}>
+              <View style={{ width: "50%", marginLeft: 24 }}>
+                <Text style={styles.text}>AVG.DAILY</Text>
+                <Text style={styles.text}>₹1,550</Text>
+              </View>
+
+              <View style={{ flex: 1 }}>
+                <Text style={styles.text}>PREDICTED</Text>
+                <Text style={styles.text}>₹42,500</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* AI Insights */}
+          <View style={[styles.card, { gap: 8 }]}>
+            <Text style={styles.AiInsightTitle}>LAKSH INSIGHT</Text>
+            <View style={styles.AiInsightValueContainer}>
+              <Text style={styles.AiInsightValue}>
+                "Your subscription spending has increased by 14% this month.
+                Consider reviewing your active streaming services to save
+                approximately ₹850 before next billing cycle."
+              </Text>
+            </View>
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -76,7 +78,8 @@ const styles = StyleSheet.create({
   main: {
     flex: 1,
     backgroundColor: colors.background,
-    justifyContent: "space-around",
+    gap: 30,
+    // justifyContent: "space-around",
   },
 
   dailySpending: {

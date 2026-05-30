@@ -1,4 +1,5 @@
 import { Tabs } from "expo-router";
+import Header from "../common/Header";
 
 export default function TabLayout() {
   return (
