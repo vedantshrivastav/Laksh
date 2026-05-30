@@ -1,8 +1,40 @@
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { View, Text, StyleSheet, ScrollView, FlatList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "../constants/theme";
 import { ProgressBar } from "react-native-paper";
 import Header from "../common/Header";
+import Ionicons from "@expo/vector-icons/Ionicons";
+// import { DATA } from "../constants/ExpenseCard";
+export const DATA = [
+  {
+    id: "1",
+    name: "Chai",
+    Icon: <Ionicons name="cafe" size={24} color="#E8A045" />,
+  },
+  {
+    id: "2",
+    name: "Food",
+    Icon: <Ionicons name="restaurant" size={24} color="#E8A045" />,
+  },
+  {
+    id: "3",
+    name: "Cab",
+    Icon: <Ionicons name="car" size={24} color="#E8A045" />,
+  },
+  {
+    id: "4",
+    name: "Shopping",
+    Icon: <Ionicons name="card-outline" size={24} color="#E8A045" />,
+  },
+];
+const renderItem = ({ item }: any) => {
+  return (
+    <View style={styles.ExpenseCard}>
+      {item.Icon}
+      <Text style={[styles.text, { textAlign: "center" }]}>{item.name}</Text>
+    </View>
+  );
+};
 export default function Home() {
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -16,6 +48,23 @@ export default function Home() {
             <Text style={styles.dailySpentAnalysis}>
               You spent 12% more than daily average
             </Text>
+          </View>
+
+          {/* Expense cards flatlist*/}
+          <View>
+            <FlatList
+              data={DATA}
+              renderItem={renderItem}
+              keyExtractor={(item) => item.id}
+              horizontal
+              contentContainerStyle={{
+                gap: 16,
+                paddingHorizontal: 18,
+                marginVertical: 8,
+                // paddingVertical: 20,
+                // marginHorizontal: 18,
+              }}
+            />
           </View>
 
           {/* Monthly Budget AI */}
@@ -95,6 +144,16 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     paddingVertical: 20,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#524437",
+  },
+  ExpenseCard: {
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+    backgroundColor: "#1E2025",
     borderWidth: 1,
     borderColor: "#524437",
   },
