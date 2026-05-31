@@ -2,8 +2,11 @@ import { Tabs } from "expo-router";
 import Header from "../common/Header";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { TouchableOpacity, View } from "react-native";
+import ExpenseSheet from "../components/ExpenseSheet";
+import { useState } from "react";
 
 export default function TabLayout() {
+  const [visible, setVisible] = useState(false);
   return (
     <View style={{ flex: 1 }}>
       <Tabs
@@ -66,9 +69,14 @@ export default function TabLayout() {
           justifyContent: "center",
           alignItems: "center",
         }}
+        onPress={() => {
+          console.log("pressed");
+          setVisible(true);
+        }}
       >
         <Ionicons name="add" size={18} color="black" />
       </TouchableOpacity>
+      <ExpenseSheet visible={visible} />
     </View>
   );
 }

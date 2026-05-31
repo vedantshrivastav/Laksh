@@ -1,10 +1,18 @@
-import { View, Text, StyleSheet, ScrollView, FlatList } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  FlatList,
+  TouchableOpacity,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "../constants/theme";
 import { ProgressBar } from "react-native-paper";
 import Header from "../common/Header";
 import Ionicons from "@expo/vector-icons/Ionicons";
-// import { DATA } from "../constants/ExpenseCard";
+import ExpenseSheet from "../components/ExpenseSheet";
+import { use, useState } from "react";
 export const DATA = [
   {
     id: "1",
@@ -29,13 +37,14 @@ export const DATA = [
 ];
 const renderItem = ({ item }: any) => {
   return (
-    <View style={styles.ExpenseCard}>
+    <TouchableOpacity style={styles.ExpenseCard}>
       {item.Icon}
       <Text style={[styles.text, { textAlign: "center" }]}>{item.name}</Text>
-    </View>
+    </TouchableOpacity>
   );
 };
 export default function Home() {
+  const [visible, setVisible] = useState(false);
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <Header />
