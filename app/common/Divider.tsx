@@ -6,7 +6,7 @@ const Divider = () => {
 };
 const styles = StyleSheet.create({
   divider: {
-    height: 0.4,
+    height: StyleSheet.hairlineWidth,
     backgroundColor: "#FFBE71",
     marginHorizontal: 16,
   },

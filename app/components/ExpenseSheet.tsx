@@ -1,4 +1,12 @@
-import { Modal, View, Text, StyleSheet, TextInput } from "react-native";
+import {
+  Modal,
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  Pressable,
+} from "react-native";
 import {
   colors,
   fontFamily,
@@ -9,18 +17,29 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import Divider from "../common/Divider";
+import ExpenseItem from "./ExpenseItem";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
-export default function ExpenseSheet({ visible }: { visible: boolean }) {
+export default function ExpenseSheet({
+  visible,
+  onClose,
+}: {
+  visible: boolean;
+  onClose: () => void;
+}) {
   const [value, setValue] = useState("");
   const [amount, setAmount] = useState("");
+  const [date, setDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   return (
     <Modal visible={visible} transparent animationType="slide">
+      <Pressable style={styles.overlay} onPress={onClose}></Pressable>
       <View
         style={{
           position: "absolute",
           bottom: 0,
           width: "100%",
-          height: "50%",
+          height: "85%",
           backgroundColor: colors.surface,
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
@@ -36,7 +55,9 @@ export default function ExpenseSheet({ visible }: { visible: boolean }) {
             }}
           >
             <Text style={styles.AddExpense}>Add Expense</Text>
-            <Ionicons name="close-outline" size={24} color="white" />
+            <TouchableOpacity onPress={onClose}>
+              <Ionicons name="close-outline" size={24} color="white" />
+            </TouchableOpacity>
           </View>
           {/*  */}
           <View style={styles.container}>
@@ -55,21 +76,85 @@ export default function ExpenseSheet({ visible }: { visible: boolean }) {
         </View>
         <Divider />
         {/* Category */}
-        <View>
-          <Text>Category</Text>
+        <View style={{ marginTop: 10 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              marginBottom: 10,
+            }}
+          >
+            <Text style={styles.label}>CATEGORY</Text>
+            <Text style={[styles.label]}>See All</Text>
+          </View>
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              gap: 10,
+              marginTop: 10,
+              marginHorizontal: 20,
+            }}
+          >
+            <ExpenseItem />
+          </View>
         </View>
         {/* Note and date */}
-        <View>
-          <Text>Label</Text>
-          <Text></Text>
+        <View style={{}}>
+          <View style={{ marginTop: 6 }}>
+            <Text style={[styles.label]}>NOTE</Text>
+            <TextInput
+              style={styles.noteAnddateInput}
+              value={value}
+              onChangeText={setValue}
+              placeholder="Add Details"
+              placeholderTextColor={colors.textMuted}
+            />
+          </View>
+          <View style={{}}>
+            <Text style={styles.label}>DATE</Text>
+
+            <TouchableOpacity
+              style={styles.dateInput}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+              >
+                <Ionicons name="calendar-outline" size={18} color="white" />
+                <Text style={styles.dateText}>{date.toLocaleDateString()}</Text>
+              </View>
+            </TouchableOpacity>
+
+            {showDatePicker && (
+              <DateTimePicker
+                value={date}
+                mode="date"
+                display="default"
+                onChange={(event, selectedDate) => {
+                  setShowDatePicker(false);
+
+                  if (selectedDate) {
+                    setDate(selectedDate);
+                  }
+                }}
+              />
+            )}
+          </View>
         </View>
         {/* Save button */}
-        <View></View>
+        <TouchableOpacity style={styles.saveButton}>
+          <Text>Save Transaction</Text>
+        </TouchableOpacity>
       </View>
     </Modal>
   );
 }
 const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
   AddExpense: {
     color: "white",
     fontSize: 18,
@@ -92,5 +177,46 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     minWidth: 60,
     textAlign: "center",
+  },
+  noteAnddateInput: {
+    fontSize: 15,
+    fontFamily: fontFamily.bold,
+    color: colors.textPrimary,
+    minWidth: 60,
+    textAlign: "center",
+    // backgroundColor: "red",
+    marginHorizontal: 20,
+    marginVertical: 10,
+    borderWidth: 1,
+    borderColor: "#524437",
+  },
+  dateInput: {
+    marginHorizontal: 20,
+    marginVertical: 10,
+    borderWidth: 1,
+    borderColor: "#524437",
+    borderRadius: radius.sm,
+    padding: 12,
+  },
+
+  dateText: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontFamily: fontFamily.bold,
+  },
+  label: {
+    color: "#D6C3B1",
+    fontSize: 12,
+    marginHorizontal: 20,
+    marginTop: 4,
+  },
+  saveButton: {
+    backgroundColor: "#E8A045",
+    marginHorizontal: 20,
+    marginVertical: 12,
+    paddingVertical: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: radius.sm,
   },
 });

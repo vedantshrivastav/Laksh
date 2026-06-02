@@ -76,7 +76,7 @@ export default function TabLayout() {
       >
         <Ionicons name="add" size={18} color="black" />
       </TouchableOpacity>
-      <ExpenseSheet visible={visible} />
+      <ExpenseSheet visible={visible} onClose={() => setVisible(false)} />
     </View>
   );
 }
