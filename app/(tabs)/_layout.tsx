@@ -70,7 +70,6 @@ export default function TabLayout() {
           alignItems: "center",
         }}
         onPress={() => {
-          console.log("pressed");
           setVisible(true);
         }}
       >

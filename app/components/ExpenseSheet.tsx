@@ -82,10 +82,11 @@ export default function ExpenseSheet({
               flexDirection: "row",
               justifyContent: "space-between",
               marginBottom: 10,
+              // backgroundColor: "blue",
             }}
           >
             <Text style={styles.label}>CATEGORY</Text>
-            <Text style={[styles.label]}>See All</Text>
+            <Text style={[styles.seeAllText]}>See All</Text>
           </View>
           <View
             style={{
@@ -176,7 +177,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bold,
     color: colors.textPrimary,
     minWidth: 60,
-    textAlign: "center",
+    textAlign: "left",
   },
   noteAnddateInput: {
     fontSize: 15,
@@ -209,6 +210,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginHorizontal: 20,
     marginTop: 4,
+  },
+  seeAllText: {
+    color: "#D6C3B1",
+    fontSize: 12,
+    marginTop: 4,
+    marginHorizontal: 60,
+    // backgroundColor: "red",
   },
   saveButton: {
     backgroundColor: "#E8A045",
