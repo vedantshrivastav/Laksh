@@ -58,7 +58,7 @@ export default function VerifyOTP() {
 
   const verifyOTP = (entered: string) => {
     if (entered === MOCK_OTP) {
-      router.replace("/(tabs)");
+      router.replace("/(tabs)/home");
     } else {
       setError("Incorrect OTP. Use 1234 for demo.");
       setOtp(["", "", "", ""]);

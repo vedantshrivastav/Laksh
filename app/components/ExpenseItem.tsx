@@ -1,14 +1,27 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import React from "react";
-import { DATA } from "../(tabs)/index";
-const ExpenseItem = () => {
-  return DATA.map((item) => (
-    <TouchableOpacity style={styles.ExpenseCard} key={item.id}>
-      {item.Icon}
-      <Text style={[styles.text, { textAlign: "center" }]}>{item.name}</Text>
-    </TouchableOpacity>
-  ));
-};
+import DATA from "../constants/expenseData";
+import { Category } from "../storage/useExpenseStore";
+type Props = { selected: Category; onSelect: (c: Category) => void };
+const ExpenseItem = ({ selected, onSelect }: Props) => (
+  <>
+    {DATA.map((item) => {
+      const active = item.category === selected;
+      return (
+        <TouchableOpacity
+          key={item.id}
+          onPress={() => onSelect(item.category)}
+          style={[styles.ExpenseCard, active && styles.activeCard]}
+        >
+          {item.Icon}
+          <Text style={[styles.text, { textAlign: "center" }]}>
+            {item.name}
+          </Text>
+        </TouchableOpacity>
+      );
+    })}
+  </>
+);
 const styles = StyleSheet.create({
   ExpenseCard: {
     justifyContent: "center",
@@ -20,6 +33,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#524437",
   },
+  activeCard: { borderColor: "#E8A045", backgroundColor: "#2A2418" },
   text: {
     color: "white",
   },

@@ -19,6 +19,8 @@ import { useState } from "react";
 import Divider from "../common/Divider";
 import ExpenseItem from "./ExpenseItem";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { Category, useExpenseStore } from "../storage/useExpenseStore";
+import DATA from "../constants/expenseData";
 
 export default function ExpenseSheet({
   visible,
@@ -27,10 +29,33 @@ export default function ExpenseSheet({
   visible: boolean;
   onClose: () => void;
 }) {
-  const [value, setValue] = useState("");
+  const addExpense = useExpenseStore((s) => s.addExpense);
+  const [note, setNote] = useState("");
   const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState<Category>("food");
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [error, setError] = useState("");
+  const handleSave = () => {
+    const num = parseFloat(amount);
+    if (!num || num <= 0) {
+      setError("Enter a valid amount");
+      return;
+    }
+    addExpense({
+      amount: num,
+      category,
+      label: DATA.find((d) => d.category === category)?.name ?? "Other",
+      note: note.trim(),
+      date: date.toISOString(),
+    });
+    setAmount("");
+    setNote("");
+    setError("");
+    setDate(new Date());
+    setCategory("food");
+    onClose();
+  };
   return (
     <Modal visible={visible} transparent animationType="slide">
       <Pressable style={styles.overlay} onPress={onClose}></Pressable>
@@ -97,7 +122,7 @@ export default function ExpenseSheet({
               marginHorizontal: 20,
             }}
           >
-            <ExpenseItem />
+            <ExpenseItem selected={category} onSelect={setCategory} />
           </View>
         </View>
         {/* Note and date */}
@@ -106,8 +131,8 @@ export default function ExpenseSheet({
             <Text style={[styles.label]}>NOTE</Text>
             <TextInput
               style={styles.noteAnddateInput}
-              value={value}
-              onChangeText={setValue}
+              value={note}
+              onChangeText={setNote}
               placeholder="Add Details"
               placeholderTextColor={colors.textMuted}
             />
@@ -143,8 +168,13 @@ export default function ExpenseSheet({
             )}
           </View>
         </View>
+        {error ? (
+          <Text style={{ color: "#EF4444", marginHorizontal: 20 }}>
+            {error}
+          </Text>
+        ) : null}
         {/* Save button */}
-        <TouchableOpacity style={styles.saveButton}>
+        <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
           <Text>Save Transaction</Text>
         </TouchableOpacity>
       </View>

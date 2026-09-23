@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export type Category =
+  | "chai"
   | "food"
   | "transport"
   | "shopping"
@@ -23,7 +24,7 @@ export type Expense = {
 
 type ExpenseStore = {
   expenses: Expense[];
-  addExpense: (expense: Expense) => void;
+  addExpense: (expense: Omit<Expense, "id">) => void
   deleteExpense: (id: string) => void;
   updateExpense: (id: string, updates: Partial<Expense>) => void;
  
@@ -45,7 +46,7 @@ export const useExpenseStore = create<ExpenseStore>()(
  
       addExpense: (expense) =>
         set((state) => ({
-          expenses: [{ ...expense, id: expense.id || generateId() }, ...state.expenses],
+          expenses: [{ ...expense, id: generateId() }, ...state.expenses],
         })),
  
       deleteExpense: (id) =>
