@@ -1,7 +1,20 @@
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ProgressBar } from "react-native-paper";
 import Header from "../common/Header";
+import { Goal, useGoalStore } from "../storage/useGoalStore";
+import { goalStats } from "../utils/goalMath";
+import { useState } from "react";
+import AddGoalSheet from "../components/AddGoalSheet";
+import ContributeSheet from "../components/ContributeSheet";
+import { Ionicons } from "@expo/vector-icons";
 
 // ── color tokens (inline so you can swap with your constants/theme import) ──
 const colors = {
@@ -111,6 +124,15 @@ const icon = StyleSheet.create({
 // ── main screen ──────────────────────────────────────────────────────────────
 
 export default function Goals() {
+  const goals = useGoalStore((s) => s.goals);
+  const activeGoalId = useGoalStore((s) => s.activeGoalId);
+  const setActiveGoal = useGoalStore((s) => s.setActiveGoal);
+  const deleteGoal = useGoalStore((s) => s.deleteGoal);
+
+  const activeGoal = goals.find((g) => g.id === activeGoalId);
+  const otherGoals = goals.filter((g) => g.id !== activeGoalId);
+  const [addVisible, setAddVisible] = useState(false);
+  const [contributeGoal, setContributeGoal] = useState<Goal | null>(null);
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <Header />
@@ -125,62 +147,91 @@ export default function Goals() {
             <Text style={styles.activeCount}>2 active</Text>
           </View>
 
-          {/* ── active goal card ── */}
-          <View style={styles.card}>
-            <ActiveBadge />
-
-            {/* title + dates */}
-            <View
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginHorizontal: 18,
+              marginTop: 20,
+            }}
+          >
+            <Text style={{ color: "white", fontSize: 20, fontWeight: "bold" }}>
+              Goals
+            </Text>
+            <TouchableOpacity
+              onPress={() => setAddVisible(true)}
               style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 4,
+                backgroundColor: "#E8A045",
+                borderRadius: 20,
+                padding: 6,
               }}
             >
-              <Text style={styles.goalTitle}>Japan Trip 2025 </Text>
-              <Text style={{ color: colors.textPrimary, fontSize: 16 }}>✈</Text>
-            </View>
-            <Text style={styles.goalDates}>Started Apr 1 · Target Jul 15</Text>
-
-            {/* amount row */}
-            <View style={[styles.row, { marginTop: 16, marginBottom: 6 }]}>
-              <Text style={styles.savedAmount}>₹67,500</Text>
-              <Text style={styles.targetAmount}>of ₹1,50,000</Text>
-            </View>
-
-            {/* progress bar */}
-            <ProgressBar
-              progress={0.45}
-              color={colors.primary}
-              style={styles.progressBar}
-            />
-
-            {/* percent + days */}
-            <View style={[styles.row, { marginTop: 8, marginBottom: 16 }]}>
-              <Text style={styles.percentSaved}>45% saved</Text>
-              <Text style={styles.daysLeft}>72 days left</Text>
-            </View>
-
-            {/* stat pills */}
-            <View style={styles.pillRow}>
-              <StatPill amount="₹666" label="Save daily" />
-              <View style={{ width: 8 }} />
-              <StatPill amount="₹4,662" label="Save weekly" />
-              <View style={{ width: 8 }} />
-              <StatPill amount="₹82,500" label="Remaining" />
-            </View>
+              <Ionicons name="add" size={22} color="black" />
+            </TouchableOpacity>
           </View>
+
+          {/* ── active goal card ── */}
+          {activeGoal ? (
+            (() => {
+              const s = goalStats(activeGoal);
+              return (
+                <View style={styles.card}>
+                  <Text style={{ color: "white" }}>
+                    {activeGoal.emoji} {activeGoal.name}
+                  </Text>
+                  <Text style={{ color: "#FFBE71" }}>
+                    ₹{activeGoal.savedAmount.toLocaleString("en-IN")} / ₹
+                    {activeGoal.targetAmount.toLocaleString("en-IN")}
+                  </Text>
+                  <ProgressBar progress={s.progress} color="#E8A045" />
+                  <Text style={{ color: "#D6C3B1" }}>
+                    {s.percent}% · {s.daysLeft} days left
+                  </Text>
+                  <Text style={{ color: "#D6C3B1" }}>
+                    Save ₹{s.perDay}/day or ₹{s.perWeek}/week
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => setContributeGoal(activeGoal)}
+                  >
+                    <Text style={{ color: "#E8A045" }}>Add money</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })()
+          ) : (
+            <Text style={{ color: "#D6C3B1" }}>
+              No goals yet. Tap + to create one.
+            </Text>
+          )}
 
           {/* ── other goals header ── */}
-          <View
-            style={[
-              styles.row,
-              { marginHorizontal: 18, marginTop: 20, marginBottom: 10 },
-            ]}
-          >
-            <Text style={styles.otherGoalsLabel}>Other goals</Text>
-            <Text style={styles.seeAll}>See all</Text>
-          </View>
+          {otherGoals.map((g) => {
+            const s = goalStats(g);
+            return (
+              <TouchableOpacity
+                key={g.id}
+                style={styles.card}
+                onPress={() => setActiveGoal(g.id)}
+                onLongPress={() =>
+                  Alert.alert("Delete goal?", g.name, [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                      text: "Delete",
+                      style: "destructive",
+                      onPress: () => deleteGoal(g.id),
+                    },
+                  ])
+                }
+              >
+                <Text style={{ color: "white" }}>
+                  {g.emoji} {g.name}
+                </Text>
+                <ProgressBar progress={s.progress} color="#E8A045" />
+                <Text style={{ color: "#D6C3B1" }}>{s.percent}%</Text>
+              </TouchableOpacity>
+            );
+          })}
 
           {/* ── MacBook Pro card ── */}
           <View style={styles.smallCard}>
@@ -232,6 +283,11 @@ export default function Goals() {
           </View>
         </View>
       </ScrollView>
+      <ContributeSheet
+        goal={contributeGoal}
+        onClose={() => setContributeGoal(null)}
+      />
+      <AddGoalSheet visible={addVisible} onClose={() => setAddVisible(false)} />
     </SafeAreaView>
   );
 }

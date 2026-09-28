@@ -56,10 +56,13 @@ export const useGoalStore = create<GoalStore>()(
       },
 
       deleteGoal: (id) =>
-        set((state) => ({
-          goals: state.goals.filter((g) => g.id !== id),
-          activeGoalId: state.activeGoalId === id ? null : state.activeGoalId,
-        })),
+  set((state) => {
+    const goals = state.goals.filter((g) => g.id !== id);
+    return {
+      goals,
+      activeGoalId: state.activeGoalId === id ? goals[0]?.id ?? null : state.activeGoalId,
+    };
+  }),
 
       setActiveGoal: (id) => set({ activeGoalId: id }),
 
@@ -67,7 +70,7 @@ export const useGoalStore = create<GoalStore>()(
         set((state) => ({
           goals: state.goals.map((g) => {
             if (g.id !== goalId) return g;
-            const newSaved = g.savedAmount + amount;
+            const newSaved = Math.min(g.savedAmount + amount, g.targetAmount);
             return {
               ...g,
               savedAmount: newSaved,

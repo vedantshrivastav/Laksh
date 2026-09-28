@@ -15,7 +15,7 @@ import {
   spacing,
 } from "../constants/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Divider from "../common/Divider";
 import ExpenseItem from "./ExpenseItem";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -24,9 +24,11 @@ import DATA from "../constants/expenseData";
 
 export default function ExpenseSheet({
   visible,
+  initialCategory,
   onClose,
 }: {
   visible: boolean;
+  initialCategory: Category;
   onClose: () => void;
 }) {
   const addExpense = useExpenseStore((s) => s.addExpense);
@@ -36,6 +38,9 @@ export default function ExpenseSheet({
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (visible) setCategory(initialCategory ?? "food");
+  }, [visible, initialCategory]);
   const handleSave = () => {
     const num = parseFloat(amount);
     if (!num || num <= 0) {

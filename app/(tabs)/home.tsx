@@ -12,20 +12,70 @@ import { ProgressBar } from "react-native-paper";
 import Header from "../common/Header";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import ExpenseSheet from "../components/ExpenseSheet";
-import { use, useState } from "react";
-import { useExpenseStore } from "../storage/useExpenseStore";
+import { useState } from "react";
+import { Category, useExpenseStore } from "../storage/useExpenseStore";
 import DATA from "../constants/expenseData";
+import { useSettingsStore } from "../storage/useSettingsStore";
 export default function Home() {
-  const renderItem = ({ item }: any) => {
-    return (
-      <TouchableOpacity style={styles.ExpenseCard}>
-        {item.Icon}
-        <Text style={[styles.text, { textAlign: "center" }]}>{item.name}</Text>
-      </TouchableOpacity>
-    );
-  };
-  const TodayExpense = useExpenseStore((state) => state.getTodayTotal());
+  const renderItem = ({ item }: { item: (typeof DATA)[number] }) => (
+    <TouchableOpacity
+      style={styles.ExpenseCard}
+      onPress={() => openSheet(item.category)}
+    >
+      {item.Icon}
+      <Text style={[styles.text, { textAlign: "center" }]}>{item.name}</Text>
+    </TouchableOpacity>
+  );
+  const expenses = useExpenseStore((s) => s.expenses);
+  const monthlyBudget = useSettingsStore((s) => s.monthlyBudget);
+  const todayTotal = useExpenseStore((s) => s.getTodayTotal());
+  const monthTotal = useExpenseStore((s) => s.getMonthTotal());
+
   const [visible, setVisible] = useState(false);
+  const [sheetCategory, setSheetCategory] = useState<Category>("food");
+
+  const openSheet = (c: Category = "food") => {
+    setSheetCategory(c);
+    setVisible(true);
+  };
+
+  const budgetPercent =
+    monthlyBudget > 0 ? Math.min(monthTotal / monthlyBudget, 1) : 0;
+  const budgetLeft = Math.max(monthlyBudget - monthTotal, 0);
+
+  const now = new Date();
+  const daysInMonth = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    0,
+  ).getDate();
+  const daysRemaining = daysInMonth - now.getDate();
+
+  // Daily average from previous days this month (excluding today)
+  const pastDays = now.getDate() - 1;
+  const dailyAvg = pastDays > 0 ? (monthTotal - todayTotal) / pastDays : 0;
+  const diffPercent =
+    dailyAvg > 0
+      ? Math.round(((todayTotal - dailyAvg) / dailyAvg) * 100)
+      : null;
+
+  const analysisText =
+    diffPercent === null
+      ? "Log a few days to see your daily average"
+      : diffPercent >= 0
+        ? `You spent ${diffPercent}% more than daily average`
+        : `You spent ${Math.abs(diffPercent)}% less than daily average`;
+
+  const insight =
+    budgetPercent > 0.8
+      ? "You've used over 80% of your budget. Slow down for the rest of the month."
+      : todayTotal === 0
+        ? "No spending today. Nice start!"
+        : `You've spent ₹${todayTotal.toLocaleString("en-IN")} today. Budget is ${Math.round(
+            budgetPercent * 100,
+          )}% used.`;
+
+  const recent = expenses.slice(0, 5);
   return (
     <SafeAreaView style={styles.safeArea}>
       <Header />
@@ -35,15 +85,16 @@ export default function Home() {
           <View style={[styles.card, { marginTop: 30 }]}>
             <Text style={styles.dailySpentText}>TODAY</Text>
             <Text style={styles.dailySpentValue}>
-              ₹ {TodayExpense.toFixed(2)}
+              ₹ {todayTotal.toLocaleString("en-IN")}
             </Text>
-            <Text style={styles.dailySpentAnalysis}>
-              You spent 12% more than daily average
-            </Text>
-            <View style={styles.logExpenseButton}>
+            <Text style={styles.dailySpentAnalysis}>{analysisText}</Text>
+            <TouchableOpacity
+              style={styles.logExpenseButton}
+              onPress={() => openSheet()}
+            >
               <Ionicons name="add-outline" size={18} color="black" />
               <Text style={{ fontWeight: "700" }}>Log an expense</Text>
-            </View>
+            </TouchableOpacity>
           </View>
 
           {/* Expense cards flatlist*/}
@@ -61,13 +112,22 @@ export default function Home() {
           <View style={[styles.card, { paddingVertical: 14 }]}>
             <View style={[styles.row, styles.monthlyBudgetHeader]}>
               <Text style={styles.monthlyBudgetText}>Monthly Budget</Text>
-              <Text style={styles.monthlyBudgetValue}>₹12,400 left</Text>
+              <Text style={styles.monthlyBudgetValue}>
+                ₹{budgetLeft.toLocaleString("en-IN")} left
+              </Text>
             </View>
             <View style={styles.progressContainer}>
-              <ProgressBar progress={0.3} color="#E8A045" />
+              <ProgressBar
+                progress={budgetPercent}
+                color={budgetPercent > 0.8 ? "#EF4444" : "#E8A045"}
+              />
               <View style={styles.progressInfoRow}>
-                <Text style={styles.progressPercentage}>72% spent</Text>
-                <Text style={styles.daysRemaining}>21 DAYS REMAINING</Text>
+                <Text style={styles.progressPercentage}>
+                  {Math.round(budgetPercent * 100)}% spent
+                </Text>
+                <Text style={styles.daysRemaining}>
+                  {daysRemaining} DAYS REMAINING
+                </Text>
               </View>
             </View>
           </View>
@@ -76,15 +136,51 @@ export default function Home() {
           <View style={[styles.card, { gap: 8 }]}>
             <Text style={styles.AiInsightTitle}>LAKSH INSIGHT</Text>
             <View style={styles.AiInsightValueContainer}>
-              <Text style={styles.AiInsightValue}>
-                "Your subscription spending has increased by 14% this month.
-                Consider reviewing your active streaming services to save
-                approximately ₹850 before next billing cycle."
-              </Text>
+              <Text style={styles.AiInsightValue}>"{insight}"</Text>
             </View>
+          </View>
+          {/* Recent Expenses */}
+          <View
+            style={[
+              styles.card,
+              { alignItems: "stretch", paddingHorizontal: 16, gap: 10 },
+            ]}
+          >
+            <Text style={styles.AiInsightTitle}>RECENT</Text>
+            {recent.length === 0 ? (
+              <Text style={{ color: "#D6C3B1", textAlign: "center" }}>
+                No expenses yet. Tap "Log an expense" to add one.
+              </Text>
+            ) : (
+              recent.map((e) => {
+                const icon = DATA.find((d) => d.category === e.category)?.Icon;
+                return (
+                  <View
+                    key={e.id}
+                    style={[styles.row, { alignItems: "center", gap: 10 }]}
+                  >
+                    {icon}
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: "white" }}>{e.label}</Text>
+                      {!!e.note && (
+                        <Text style={styles.daysRemaining}>{e.note}</Text>
+                      )}
+                    </View>
+                    <Text style={{ color: "#FFBE71", fontWeight: "600" }}>
+                      ₹{e.amount.toLocaleString("en-IN")}
+                    </Text>
+                  </View>
+                );
+              })
+            )}
           </View>
         </View>
       </ScrollView>
+      <ExpenseSheet
+        visible={visible}
+        initialCategory={sheetCategory}
+        onClose={() => setVisible(false)}
+      />
     </SafeAreaView>
   );
 }
