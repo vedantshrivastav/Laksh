@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   View,
   Text,
@@ -13,16 +14,20 @@ import {
   spacing,
   radius,
 } from "../constants/theme";
+import Header from "../common/Header";
+import { useExpenseStore } from "../storage/useExpenseStore";
+import type { Expense } from "../storage/useExpenseStore";
+import DATA from "../constants/expenseData";
+import { getRange, getPreviousRange, type Period } from "../utils/dataRange";
+// import { getRange, getPreviousRange, type Period } from "../utils/dateRanges";
 
 // ── Types ─────────────────────────────────────────────────
-
-type Period = "week" | "month" | "3m";
 
 type CategoryData = {
   name: string;
   amount: number;
+  percent: number;
   color: string;
-  total: number;
 };
 
 type PatternData = {
@@ -34,153 +39,100 @@ type PatternData = {
   valueColor?: string;
 };
 
-type InsightData = {
-  period: Period;
-  totalSpent: number;
-  vsLast: number;
-  vsLastPositive: boolean;
-  aiInsight: string;
-  aiTip: string;
-  categories: CategoryData[];
-  patterns: PatternData[];
-};
-
-// ── Dummy Data ────────────────────────────────────────────
-
-const DUMMY_INSIGHTS: Record<Period, InsightData> = {
-  week: {
-    period: "week",
-    totalSpent: 2840,
-    vsLast: 320,
-    vsLastPositive: false,
-    aiInsight:
-      "You spent ₹980 on food delivery this week — 3 Swiggy orders in 5 days. At this rate you'll spend ₹4,200 this month on food alone.",
-    aiTip:
-      "Try cooking twice this week. That alone saves ₹600 toward your Japan goal.",
-    categories: [
-      { name: "Food & Drink", amount: 980, color: "#E8A045", total: 2840 },
-      { name: "Transport", amount: 640, color: "#4CAF82", total: 2840 },
-      { name: "Shopping", amount: 720, color: "#5DCAA5", total: 2840 },
-      { name: "Bills", amount: 300, color: "#8A8F9E", total: 2840 },
-      { name: "Others", amount: 200, color: "#444854", total: 2840 },
-    ],
-    patterns: [
-      {
-        id: "1",
-        emoji: "📅",
-        title: "Highest spend day",
-        subtitle: "You spent 2x more on Saturday",
-        value: "Sat",
-      },
-      {
-        id: "2",
-        emoji: "🛵",
-        title: "Top merchant",
-        subtitle: "Ordered 3 times this week",
-        value: "Swiggy",
-      },
-      {
-        id: "3",
-        emoji: "⚡",
-        title: "Impulse spends",
-        subtitle: "1 day with 5+ small purchases",
-        value: "₹340",
-        valueColor: colors.danger,
-      },
-    ],
-  },
-  month: {
-    period: "month",
-    totalSpent: 11240,
-    vsLast: 820,
-    vsLastPositive: true,
-    aiInsight:
-      "You spent ₹4,200 on food delivery this month — 38% of your total. Cutting Swiggy to 3x/week saves ₹1,800/month — that's your Japan goal 46 days faster.",
-    aiTip:
-      "Try cooking on weekdays. Your spending spikes on Tuesday and Thursday evenings consistently.",
-    categories: [
-      { name: "Food & Drink", amount: 4200, color: "#E8A045", total: 11240 },
-      { name: "Transport", amount: 1960, color: "#4CAF82", total: 11240 },
-      { name: "Shopping", amount: 1580, color: "#5DCAA5", total: 11240 },
-      { name: "Bills", amount: 1240, color: "#8A8F9E", total: 11240 },
-      { name: "Others", amount: 840, color: "#444854", total: 11240 },
-    ],
-    patterns: [
-      {
-        id: "1",
-        emoji: "📅",
-        title: "Highest spend day",
-        subtitle: "You spend 2x more on Saturdays than weekdays",
-        value: "Sat",
-      },
-      {
-        id: "2",
-        emoji: "🛵",
-        title: "Top merchant",
-        subtitle: "Ordered 11 times this month",
-        value: "Swiggy",
-      },
-      {
-        id: "3",
-        emoji: "⚡",
-        title: "Impulse spends",
-        subtitle: "3 days with 5+ small purchases",
-        value: "₹1,340",
-        valueColor: colors.danger,
-      },
-    ],
-  },
-  "3m": {
-    period: "3m",
-    totalSpent: 34200,
-    vsLast: 2400,
-    vsLastPositive: true,
-    aiInsight:
-      "Over 3 months your food spending has grown 18% month on month. You're saving ₹2,400 more than 3 months ago — solid progress toward your Japan goal.",
-    aiTip:
-      "Your best month was April — ₹1,200 less on dining out. Replicate that pattern this month.",
-    categories: [
-      { name: "Food & Drink", amount: 12400, color: "#E8A045", total: 34200 },
-      { name: "Transport", amount: 6200, color: "#4CAF82", total: 34200 },
-      { name: "Shopping", amount: 7800, color: "#5DCAA5", total: 34200 },
-      { name: "Bills", amount: 4200, color: "#8A8F9E", total: 34200 },
-      { name: "Others", amount: 3600, color: "#444854", total: 34200 },
-    ],
-    patterns: [
-      {
-        id: "1",
-        emoji: "📅",
-        title: "Most expensive month",
-        subtitle: "June was your highest spend month",
-        value: "June",
-      },
-      {
-        id: "2",
-        emoji: "🛵",
-        title: "Top merchant",
-        subtitle: "Spent across 28 orders total",
-        value: "Swiggy",
-      },
-      {
-        id: "3",
-        emoji: "⚡",
-        title: "Impulse spends",
-        subtitle: "Total across 3 months",
-        value: "₹4,200",
-        valueColor: colors.danger,
-      },
-    ],
-  },
-};
-
 // ── Helpers ───────────────────────────────────────────────
 
 function formatAmount(amount: number) {
   return `₹${amount.toLocaleString("en-IN")}`;
 }
 
-function getBarWidth(amount: number, total: number) {
-  return `${Math.round((amount / total) * 100)}%`;
+const CATEGORY_COLORS = [
+  "#E8A045",
+  "#4CAF82",
+  "#5DCAA5",
+  "#8A8F9E",
+  "#444854",
+  "#7C8CF8",
+];
+
+function categoryBreakdown(list: Expense[]): CategoryData[] {
+  const totals: Record<string, number> = {};
+  list.forEach((e) => {
+    totals[e.category] = (totals[e.category] || 0) + e.amount;
+  });
+  const total = list.reduce((s, e) => s + e.amount, 0);
+
+  return Object.entries(totals)
+    .map(([category, amount], i) => ({
+      name: DATA.find((d) => d.category === category)?.name ?? category,
+      amount,
+      percent: total > 0 ? Math.round((amount / total) * 100) : 0,
+      color: CATEGORY_COLORS[i % CATEGORY_COLORS.length],
+    }))
+    .sort((a, b) => b.amount - a.amount);
+}
+
+function buildPatterns(list: Expense[]): PatternData[] {
+  if (list.length === 0) return [];
+  const patterns: PatternData[] = [];
+
+  // Highest spend day of the week
+  const dayTotals: Record<string, number> = {};
+  list.forEach((e) => {
+    const day = new Date(e.date).toLocaleDateString("en-US", {
+      weekday: "short",
+    });
+    dayTotals[day] = (dayTotals[day] || 0) + e.amount;
+  });
+  const topDay = Object.entries(dayTotals).sort((a, b) => b[1] - a[1])[0];
+  if (topDay) {
+    patterns.push({
+      id: "day",
+      emoji: "📅",
+      title: "Highest spend day",
+      subtitle: `You spent ${formatAmount(topDay[1])} on ${topDay[0]}s`,
+      value: topDay[0],
+    });
+  }
+
+  // Most frequent category
+  const countByCategory: Record<string, number> = {};
+  list.forEach((e) => {
+    countByCategory[e.category] = (countByCategory[e.category] || 0) + 1;
+  });
+  const topCat = Object.entries(countByCategory).sort((a, b) => b[1] - a[1])[0];
+  if (topCat) {
+    const label = DATA.find((d) => d.category === topCat[0])?.name ?? topCat[0];
+    patterns.push({
+      id: "category",
+      emoji: "🔁",
+      title: "Most frequent category",
+      subtitle: `${topCat[1]} transaction${topCat[1] > 1 ? "s" : ""} logged`,
+      value: label,
+    });
+  }
+
+  // Busy days: 3+ transactions in a single day
+  const dayGroups: Record<string, { count: number; amount: number }> = {};
+  list.forEach((e) => {
+    const day = new Date(e.date).toDateString();
+    if (!dayGroups[day]) dayGroups[day] = { count: 0, amount: 0 };
+    dayGroups[day].count += 1;
+    dayGroups[day].amount += e.amount;
+  });
+  const busyDays = Object.values(dayGroups).filter((d) => d.count >= 3);
+  if (busyDays.length > 0) {
+    const busyTotal = busyDays.reduce((s, d) => s + d.amount, 0);
+    patterns.push({
+      id: "busy",
+      emoji: "⚡",
+      title: "Busy spend days",
+      subtitle: `${busyDays.length} day${busyDays.length > 1 ? "s" : ""} with 3+ transactions`,
+      value: formatAmount(busyTotal),
+      valueColor: colors.danger,
+    });
+  }
+
+  return patterns;
 }
 
 // ── Period Toggle ─────────────────────────────────────────
@@ -247,7 +199,7 @@ function TotalCard({
   period,
 }: {
   amount: number;
-  vsLast: number;
+  vsLast: number | null;
   vsLastPositive: boolean;
   period: Period;
 }) {
@@ -265,12 +217,16 @@ function TotalCard({
       <Text
         style={[
           styles.totalVs,
-          { color: vsLastPositive ? colors.success : colors.danger },
+          vsLast !== null && {
+            color: vsLastPositive ? colors.success : colors.danger,
+          },
         ]}
       >
-        {vsLastPositive ? "↓" : "↑"} {formatAmount(vsLast)}{" "}
-        {vsLastPositive ? "less" : "more"} than last{" "}
-        {period === "3m" ? "quarter" : period}
+        {vsLast === null
+          ? "Not enough history to compare yet"
+          : `${vsLastPositive ? "↓" : "↑"} ${formatAmount(vsLast)} ${
+              vsLastPositive ? "less" : "more"
+            } than last ${period === "3m" ? "quarter" : period}`}
       </Text>
     </View>
   );
@@ -295,10 +251,7 @@ function CategoryBreakdown({ categories }: { categories: CategoryData[] }) {
             <View
               style={[
                 styles.categoryBarFill,
-                {
-                  width: getBarWidth(cat.amount, cat.total),
-                  backgroundColor: cat.color,
-                },
+                { width: `${cat.percent}%`, backgroundColor: cat.color },
               ]}
             />
           </View>
@@ -349,15 +302,47 @@ function EmptyState() {
 
 // ── Insights Screen ───────────────────────────────────────
 
-import { useState } from "react";
-import Header from "../common/Header";
-
 export default function Insights() {
   const [period, setPeriod] = useState<Period>("month");
+  const expenses = useExpenseStore((s) => s.expenses);
 
-  // TODO: replace with real data from useExpenseStore()
-  const data = DUMMY_INSIGHTS[period];
-  const hasData = true; // TODO: check if real expenses exist
+  const { start, end } = getRange(period);
+  const { start: pStart, end: pEnd } = getPreviousRange(period);
+
+  const current = expenses.filter((e) => {
+    const d = new Date(e.date);
+    return d >= start && d <= end;
+  });
+  const previous = expenses.filter((e) => {
+    const d = new Date(e.date);
+    return d >= pStart && d <= pEnd;
+  });
+
+  const total = current.reduce((s, e) => s + e.amount, 0);
+  const prevTotal = previous.reduce((s, e) => s + e.amount, 0);
+  const vsLast = prevTotal > 0 ? Math.abs(total - prevTotal) : null;
+  const vsLastPositive = prevTotal > 0 ? total <= prevTotal : true;
+
+  const categories = categoryBreakdown(current);
+  const patterns = buildPatterns(current);
+  const topCategory = categories[0];
+  const hasData = current.length > 0;
+
+  const aiInsight = !hasData
+    ? "Log a few expenses this period and Laksh will start spotting patterns for you."
+    : vsLast === null
+      ? `You've spent ${formatAmount(total)} so far. Keep logging to unlock period comparisons.`
+      : vsLastPositive
+        ? `You spent ${formatAmount(vsLast)} less than last ${period === "3m" ? "quarter" : period}. Solid progress.`
+        : `You spent ${formatAmount(vsLast)} more than last ${period === "3m" ? "quarter" : period}${
+            topCategory ? `, mostly on ${topCategory.name}` : ""
+          }.`;
+
+  const aiTip = !hasData
+    ? "Add your first expense to start building insights."
+    : topCategory && topCategory.percent > 40
+      ? `${topCategory.name} makes up ${topCategory.percent}% of your spending. Try setting a soft limit there.`
+      : "Your spending looks fairly balanced across categories.";
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -376,13 +361,13 @@ export default function Insights() {
             contentContainerStyle={styles.scrollContent}
           >
             {/* AI Insight */}
-            <AIInsightCard insight={data.aiInsight} tip={data.aiTip} />
+            <AIInsightCard insight={aiInsight} tip={aiTip} />
 
             {/* Total Spend */}
             <TotalCard
-              amount={data.totalSpent}
-              vsLast={data.vsLast}
-              vsLastPositive={data.vsLastPositive}
+              amount={total}
+              vsLast={vsLast}
+              vsLastPositive={vsLastPositive}
               period={period}
             />
 
@@ -390,15 +375,19 @@ export default function Insights() {
             <View style={styles.sectionRow}>
               <Text style={styles.sectionTitle}>By category</Text>
             </View>
-            <CategoryBreakdown categories={data.categories} />
+            <CategoryBreakdown categories={categories} />
 
             {/* Patterns */}
-            <View style={styles.sectionRow}>
-              <Text style={styles.sectionTitle}>Spending patterns</Text>
-            </View>
-            {data.patterns.map((pattern) => (
-              <PatternCard key={pattern.id} pattern={pattern} />
-            ))}
+            {patterns.length > 0 && (
+              <>
+                <View style={styles.sectionRow}>
+                  <Text style={styles.sectionTitle}>Spending patterns</Text>
+                </View>
+                {patterns.map((pattern) => (
+                  <PatternCard key={pattern.id} pattern={pattern} />
+                ))}
+              </>
+            )}
           </ScrollView>
         )}
       </View>
