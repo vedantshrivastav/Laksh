@@ -2,6 +2,14 @@ import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ProgressBar } from "react-native-paper";
 import Header from "../common/Header";
+import { useExpenseStore } from "../storage/useExpenseStore";
+import {
+  getCurrentStreak,
+  getTier,
+  getLastSevenDays,
+  getRewardStatus,
+  type Tier,
+} from "../utils/streak";
 
 const colors = {
   background: "#0E0F11",
@@ -18,7 +26,6 @@ const colors = {
   streakInactive: "#2A2B30",
 };
 
-// ── Day circle ───────────────────────────────────────────────────────────────
 function DayCircle({ letter, active }: { letter: string; active: boolean }) {
   return (
     <View
@@ -150,7 +157,24 @@ const badgeSt = StyleSheet.create({
 });
 
 // ── main screen ──────────────────────────────────────────────────────────────
+const TIERS: { key: Tier; icon: string; sub: string }[] = [
+  { key: "Assistant", icon: "🤖", sub: "0-6 days" },
+  { key: "Analyst", icon: "📊", sub: "7-29 days" },
+  { key: "CFO", icon: "💼", sub: "30-89 days" },
+  { key: "Oracle", icon: "🔮", sub: "90+ days" },
+];
+
 export default function Rewards() {
+  const expenses = useExpenseStore((s) => s.expenses);
+
+  const streak = getCurrentStreak(expenses);
+  const { tier: currentTier } = getTier(streak);
+  const days = getLastSevenDays(expenses);
+  const rewards = getRewardStatus(expenses, streak);
+
+  const moneyMindfulDaysLeft = Math.max(30 - streak, 0);
+  const ninjaDaysLeft = Math.max(90 - streak, 0);
+
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <Header />
@@ -169,12 +193,13 @@ export default function Rewards() {
           <View style={styles.card}>
             <Text style={styles.streakLabel}>Current{"\n"}streak</Text>
             <View style={styles.streakRight}>
-              <Text style={styles.streakCount}>12 days</Text>
-              {/* <Text style={styles.streakDays}>days</Text> */}
+              <Text style={styles.streakCount}>
+                {streak} {streak === 1 ? "day" : "days"}
+              </Text>
             </View>
             <View style={styles.dayRow}>
-              {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
-                <DayCircle key={i} letter={d} active={i < 5} />
+              {days.map((d, i) => (
+                <DayCircle key={i} letter={d.letter} active={d.active} />
               ))}
             </View>
           </View>
@@ -182,16 +207,20 @@ export default function Rewards() {
           {/* ── AI tier ── */}
           <Text style={styles.sectionLabel}>AI tier</Text>
           <View style={styles.tierRow}>
-            <TierCard icon="🤖" label="Assistant" sub="Week 1" />
-            <TierCard icon="📊" label="Analyst" sub="Week 2" active />
-            <TierCard icon="💼" label="CFO" sub="Month 1" />
-            <TierCard icon="🔮" label="Oracle" sub="3 months" />
+            {TIERS.map((t) => (
+              <TierCard
+                key={t.key}
+                icon={t.icon}
+                label={t.key}
+                sub={t.sub}
+                active={t.key === currentTier}
+              />
+            ))}
           </View>
 
           {/* ── your rewards ── */}
           <View style={[styles.row, { marginTop: 24, marginBottom: 12 }]}>
             <Text style={styles.sectionLabel}>Your rewards</Text>
-            <Text style={styles.seeAll}>See all</Text>
           </View>
 
           {/* Weekly Money Story */}
@@ -201,7 +230,10 @@ export default function Rewards() {
               <View style={{ flex: 1 }}>
                 <View style={[styles.row, { marginBottom: 4 }]}>
                   <Text style={styles.rewardTitle}>Weekly Money Story</Text>
-                  <Badge label="Ready" variant="ready" />
+                  <Badge
+                    label={rewards.weeklyStoryReady ? "Ready" : "Not yet"}
+                    variant={rewards.weeklyStoryReady ? "ready" : "locked"}
+                  />
                 </View>
                 <Text style={styles.rewardDesc}>
                   Your week in money — Spotify Wrapped style
@@ -211,7 +243,9 @@ export default function Rewards() {
             <View style={styles.rewardFooter}>
               <Text style={styles.footerDot}>•</Text>
               <Text style={styles.footerText}>
-                Available every Sunday · Tap to view
+                {rewards.weeklyStoryReady
+                  ? "Tap to view this week's story"
+                  : "Log an expense this week to unlock"}
               </Text>
             </View>
           </View>
@@ -225,40 +259,69 @@ export default function Rewards() {
                   <Text style={styles.rewardTitle}>
                     Money Mindful{"\n"}Badge
                   </Text>
-                  <Badge label="18 days" variant="days" />
+                  <Badge
+                    label={
+                      rewards.moneyMindfulUnlocked
+                        ? "Claimed"
+                        : `${moneyMindfulDaysLeft} days`
+                    }
+                    variant={rewards.moneyMindfulUnlocked ? "claimed" : "days"}
+                  />
                 </View>
                 <Text style={styles.rewardDesc}>30 day streak achievement</Text>
               </View>
             </View>
-            {/* progress */}
             <ProgressBar
-              progress={0.4}
+              progress={rewards.moneyMindfulProgress}
               color={colors.primary}
               style={styles.progressBar}
             />
             <View style={[styles.row, { marginTop: 6 }]}>
-              <Text style={styles.footerText}>12 of 30 days</Text>
+              <Text style={styles.footerText}>
+                {Math.min(streak, 30)} of 30 days
+              </Text>
               <Text
                 style={[
                   styles.footerText,
                   { color: colors.primary, fontWeight: "700" },
                 ]}
               >
-                40%
+                {Math.round(rewards.moneyMindfulProgress * 100)}%
               </Text>
             </View>
           </View>
 
           {/* Spending Personality */}
-          <View style={styles.rewardCard}>
+          <View
+            style={[
+              styles.rewardCard,
+              !rewards.spendingPersonalityUnlocked && styles.lockedCard,
+            ]}
+          >
             <View style={styles.rewardTop}>
               <RewardIcon letter="S" />
               <View style={{ flex: 1 }}>
                 <View style={[styles.row, { marginBottom: 4 }]}>
-                  <Text style={styles.rewardTitle}>
+                  <Text
+                    style={[
+                      styles.rewardTitle,
+                      !rewards.spendingPersonalityUnlocked && {
+                        color: colors.textSecondary,
+                      },
+                    ]}
+                  >
                     Spending{"\n"}Personality
                   </Text>
-                  <Badge label="Claimed" variant="claimed" />
+                  <Badge
+                    label={
+                      rewards.spendingPersonalityUnlocked
+                        ? "Unlocked"
+                        : "🔒 Locked"
+                    }
+                    variant={
+                      rewards.spendingPersonalityUnlocked ? "claimed" : "locked"
+                    }
+                  />
                 </View>
                 <Text style={styles.rewardDesc}>
                   AI analysis of your money habits
@@ -266,15 +329,24 @@ export default function Rewards() {
               </View>
             </View>
             <View style={styles.rewardFooter}>
-              <Text style={styles.footerDot}>✓</Text>
+              <Text style={styles.footerDot}>
+                {rewards.spendingPersonalityUnlocked ? "✓" : ""}
+              </Text>
               <Text style={styles.footerText}>
-                Unlocked at 7 day streak · Tap to revisit
+                {rewards.spendingPersonalityUnlocked
+                  ? "Unlocked at 7 day streak · Tap to view"
+                  : `Reach a 7 day streak to unlock (${streak}/7)`}
               </Text>
             </View>
           </View>
 
-          {/* Financial Ninja Badge — locked */}
-          <View style={[styles.rewardCard, styles.lockedCard]}>
+          {/* Financial Ninja Badge */}
+          <View
+            style={[
+              styles.rewardCard,
+              !rewards.financialNinjaUnlocked && styles.lockedCard,
+            ]}
+          >
             <View style={styles.rewardTop}>
               <RewardIcon letter="F" />
               <View style={{ flex: 1 }}>
@@ -282,12 +354,21 @@ export default function Rewards() {
                   <Text
                     style={[
                       styles.rewardTitle,
-                      { color: colors.textSecondary },
+                      !rewards.financialNinjaUnlocked && {
+                        color: colors.textSecondary,
+                      },
                     ]}
                   >
                     Financial Ninja{"\n"}Badge
                   </Text>
-                  <Badge label="🔒 Locked" variant="locked" />
+                  <Badge
+                    label={
+                      rewards.financialNinjaUnlocked ? "Unlocked" : "🔒 Locked"
+                    }
+                    variant={
+                      rewards.financialNinjaUnlocked ? "claimed" : "locked"
+                    }
+                  />
                 </View>
                 <Text style={styles.rewardDesc}>
                   90 day streak — the ultimate achievement
@@ -296,7 +377,9 @@ export default function Rewards() {
             </View>
             <View style={styles.rewardFooter}>
               <Text style={styles.footerText}>
-                Maintain a 90 day streak to unlock
+                {rewards.financialNinjaUnlocked
+                  ? "Achieved! You're a Financial Ninja."
+                  : `Maintain a 90 day streak to unlock (${ninjaDaysLeft} to go)`}
               </Text>
             </View>
           </View>
@@ -341,12 +424,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "700",
   },
-  streakDays: {
-    color: colors.textPrimary,
-    fontSize: 16,
-    fontWeight: "600",
-    marginTop: -4,
-  },
   dayRow: { flexDirection: "row", alignItems: "center" },
 
   // tier
@@ -368,12 +445,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-  },
-  seeAll: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: "500",
-    marginHorizontal: 18,
   },
 
   // reward cards
