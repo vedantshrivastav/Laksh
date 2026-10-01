@@ -16,6 +16,7 @@ import { useState } from "react";
 import { Category, useExpenseStore } from "../storage/useExpenseStore";
 import DATA from "../constants/expenseData";
 import { useSettingsStore } from "../storage/useSettingsStore";
+import AskLaksh from "../components/AskLaksh";
 export default function Home() {
   const renderItem = ({ item }: { item: (typeof DATA)[number] }) => (
     <TouchableOpacity
@@ -33,6 +34,7 @@ export default function Home() {
 
   const [visible, setVisible] = useState(false);
   const [sheetCategory, setSheetCategory] = useState<Category>("food");
+  const [chatVisible, setChatVisible] = useState(false);
 
   const openSheet = (c: Category = "food") => {
     setSheetCategory(c);
@@ -181,6 +183,14 @@ export default function Home() {
         initialCategory={sheetCategory}
         onClose={() => setVisible(false)}
       />
+      <TouchableOpacity
+        style={styles.chatFab}
+        onPress={() => setChatVisible(true)}
+        activeOpacity={0.85}
+      >
+        <Ionicons name="chatbubble-ellipses" size={22} color="black" />
+      </TouchableOpacity>
+      <AskLaksh visible={chatVisible} onClose={() => setChatVisible(false)} />
     </SafeAreaView>
   );
 }
@@ -249,6 +259,22 @@ const styles = StyleSheet.create({
     backgroundColor: "#1E2025",
     borderWidth: 1,
     borderColor: "#524437",
+  },
+  chatFab: {
+    position: "absolute",
+    right: 20,
+    bottom: 8, // sits above the bottom tab bar
+    width: 40,
+    height: 40,
+    borderRadius: 26,
+    backgroundColor: "#E8A045",
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
   },
   monthlyBudgetHeader: {
     alignItems: "center",
