@@ -21,6 +21,10 @@ import ExpenseItem from "./ExpenseItem";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Category, useExpenseStore } from "../storage/useExpenseStore";
 import DATA from "../constants/expenseData";
+import { Feedback, generateExpenseFeedback } from "../utils/expenseFeedback";
+import { useGoalStore } from "../storage/useGoalStore";
+import { useSettingsStore } from "../storage/useSettingsStore";
+import FeedbackBanner from "./FeedbackBanner";
 
 export default function ExpenseSheet({
   visible,
@@ -38,28 +42,44 @@ export default function ExpenseSheet({
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [error, setError] = useState("");
+  const monthTotal = useExpenseStore((s) => s.getMonthTotal());
+  const monthlyBudget = useSettingsStore((s) => s.monthlyBudget);
+  const goals = useGoalStore((s) => s.goals);
+  const activeGoalId = useGoalStore((s) => s.activeGoalId);
+  const activeGoal = goals.find((g) => g.id === activeGoalId);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
   useEffect(() => {
     if (visible) setCategory(initialCategory ?? "food");
   }, [visible, initialCategory]);
   const handleSave = () => {
     const num = parseFloat(amount);
-    if (!num || num <= 0) {
-      setError("Enter a valid amount");
-      return;
-    }
+    if (!num || num <= 0) return setError("Enter a valid amount");
+
+    const categoryLabel =
+      DATA.find((d) => d.category === category)?.name ?? "Other";
+
     addExpense({
       amount: num,
       category,
-      label: DATA.find((d) => d.category === category)?.name ?? "Other",
+      label: categoryLabel,
       note: note.trim(),
       date: date.toISOString(),
     });
+
+    const fb = generateExpenseFeedback({
+      amount: num,
+      categoryLabel,
+      monthlyBudget,
+      monthTotalAfter: monthTotal + num,
+      activeGoal,
+    });
+    setFeedback(fb);
+
     setAmount("");
     setNote("");
     setError("");
     setDate(new Date());
     setCategory("food");
-    onClose();
   };
   return (
     <Modal visible={visible} transparent animationType="slide">
@@ -178,6 +198,16 @@ export default function ExpenseSheet({
             {error}
           </Text>
         ) : null}
+        {feedback && (
+          <FeedbackBanner
+            message={feedback.message}
+            tone={feedback.tone}
+            onDismiss={() => {
+              setFeedback(null);
+              onClose();
+            }}
+          />
+        )}
         {/* Save button */}
         <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
           <Text>Save Transaction</Text>
