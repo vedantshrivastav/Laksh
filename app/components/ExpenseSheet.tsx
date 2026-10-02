@@ -25,6 +25,9 @@ import { Feedback, generateExpenseFeedback } from "../utils/expenseFeedback";
 import { useGoalStore } from "../storage/useGoalStore";
 import { useSettingsStore } from "../storage/useSettingsStore";
 import FeedbackBanner from "./FeedbackBanner";
+import { useCommitmentStore } from "../storage/useCommitmentStore";
+import { checkCommitmentViolations } from "../utils/checkCommitment";
+import CommitmentSheet from "./CommitmentSheet";
 
 export default function ExpenseSheet({
   visible,
@@ -48,6 +51,9 @@ export default function ExpenseSheet({
   const activeGoalId = useGoalStore((s) => s.activeGoalId);
   const activeGoal = goals.find((g) => g.id === activeGoalId);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const commitments = useCommitmentStore((s) => s.commitments);
+  const allExpenses = useExpenseStore((s) => s.expenses);
+  const [rulesVisible, setRulesVisible] = useState(false);
   useEffect(() => {
     if (visible) setCategory(initialCategory ?? "food");
   }, [visible, initialCategory]);
@@ -57,22 +63,31 @@ export default function ExpenseSheet({
 
     const categoryLabel =
       DATA.find((d) => d.category === category)?.name ?? "Other";
-
-    addExpense({
+    const newExpense = {
       amount: num,
       category,
       label: categoryLabel,
       note: note.trim(),
       date: date.toISOString(),
-    });
+    };
+    addExpense(newExpense);
 
-    const fb = generateExpenseFeedback({
-      amount: num,
-      categoryLabel,
-      monthlyBudget,
-      monthTotalAfter: monthTotal + num,
-      activeGoal,
-    });
+    // Check commitments first — they're the strongest, user-opted-in signal
+    const violation = checkCommitmentViolations(
+      category,
+      [...allExpenses, { ...newExpense, id: "temp" }], // include the one just added
+      commitments,
+    );
+
+    const fb =
+      violation ??
+      generateExpenseFeedback({
+        amount: num,
+        categoryLabel,
+        monthlyBudget,
+        monthTotalAfter: monthTotal + num,
+        activeGoal,
+      });
     setFeedback(fb);
 
     setAmount("");
@@ -132,11 +147,12 @@ export default function ExpenseSheet({
               flexDirection: "row",
               justifyContent: "space-between",
               marginBottom: 10,
-              // backgroundColor: "blue",
             }}
           >
             <Text style={styles.label}>CATEGORY</Text>
-            <Text style={[styles.seeAllText]}>See All</Text>
+            <TouchableOpacity onPress={() => setRulesVisible(true)}>
+              <Text style={styles.seeAllText}>Manage Rules</Text>
+            </TouchableOpacity>
           </View>
           <View
             style={{
@@ -150,6 +166,11 @@ export default function ExpenseSheet({
             <ExpenseItem selected={category} onSelect={setCategory} />
           </View>
         </View>
+
+        <CommitmentSheet
+          visible={rulesVisible}
+          onClose={() => setRulesVisible(false)}
+        />
         {/* Note and date */}
         <View style={{}}>
           <View style={{ marginTop: 6 }}>
