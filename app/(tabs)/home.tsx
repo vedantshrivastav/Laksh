@@ -12,12 +12,24 @@ import { ProgressBar } from "react-native-paper";
 import Header from "../common/Header";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import ExpenseSheet from "../components/ExpenseSheet";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Category, useExpenseStore } from "../storage/useExpenseStore";
 import DATA from "../constants/expenseData";
 import { useSettingsStore } from "../storage/useSettingsStore";
 import AskLaksh from "../components/AskLaksh";
+import { generateWeeklyReport, WeeklyReport } from "../utils/weeklyReport";
+import { useReportStore } from "../storage/useReportStore";
+import WeeklyReportModal from "../components/WeeklyReportModal";
 export default function Home() {
+  const lastSeenWeekKey = useReportStore((s) => s.lastSeenWeekKey);
+  const markWeekSeen = useReportStore((s) => s.markWeekSeen);
+  const [report, setReport] = useState<WeeklyReport | null>(null);
+  useEffect(() => {
+    const r = generateWeeklyReport(expenses);
+    if (r && r.weekKey !== lastSeenWeekKey) {
+      setReport(r);
+    }
+  }, []); // run once when Home mounts
   const renderItem = ({ item }: { item: (typeof DATA)[number] }) => (
     <TouchableOpacity
       style={styles.ExpenseCard}
@@ -191,6 +203,13 @@ export default function Home() {
         <Ionicons name="chatbubble-ellipses" size={22} color="black" />
       </TouchableOpacity>
       <AskLaksh visible={chatVisible} onClose={() => setChatVisible(false)} />
+      <WeeklyReportModal
+        report={report}
+        onClose={() => {
+          if (report) markWeekSeen(report.weekKey);
+          setReport(null);
+        }}
+      />
     </SafeAreaView>
   );
 }
