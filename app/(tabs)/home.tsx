@@ -20,10 +20,13 @@ import AskLaksh from "../components/AskLaksh";
 import { generateWeeklyReport, WeeklyReport } from "../utils/weeklyReport";
 import { useReportStore } from "../storage/useReportStore";
 import WeeklyReportModal from "../components/WeeklyReportModal";
+import { getTodayPatterns } from "../utils/patternDetection";
+import SmartSuggestionCard from "../components/SmartSuggestionCard";
 export default function Home() {
   const lastSeenWeekKey = useReportStore((s) => s.lastSeenWeekKey);
   const markWeekSeen = useReportStore((s) => s.markWeekSeen);
   const [report, setReport] = useState<WeeklyReport | null>(null);
+
   useEffect(() => {
     const r = generateWeeklyReport(expenses);
     if (r && r.weekKey !== lastSeenWeekKey) {
@@ -43,14 +46,37 @@ export default function Home() {
   const monthlyBudget = useSettingsStore((s) => s.monthlyBudget);
   const todayTotal = useExpenseStore((s) => s.getTodayTotal());
   const monthTotal = useExpenseStore((s) => s.getMonthTotal());
+  const addExpense = useExpenseStore((s) => s.addExpense);
 
   const [visible, setVisible] = useState(false);
   const [sheetCategory, setSheetCategory] = useState<Category>("food");
   const [chatVisible, setChatVisible] = useState(false);
+  const [dismissedPatterns, setDismissedPatterns] = useState<Set<string>>(
+    new Set(),
+  );
+
+  const todayPatterns = getTodayPatterns(expenses).filter(
+    (p) => !dismissedPatterns.has(p.category),
+  );
 
   const openSheet = (c: Category = "food") => {
     setSheetCategory(c);
     setVisible(true);
+  };
+
+  const seedTestData = () => {
+    const today = new Date().getDay(); // e.g. 3 = Wednesday
+    for (let weeksAgo = 1; weeksAgo <= 4; weeksAgo++) {
+      const date = new Date();
+      date.setDate(date.getDate() - weeksAgo * 7); // same weekday, past weeks
+      addExpense({
+        amount: 150 + weeksAgo * 10,
+        category: "transport",
+        label: "Cab",
+        note: "test data",
+        date: date.toISOString(),
+      });
+    }
   };
 
   const budgetPercent =
@@ -145,7 +171,9 @@ export default function Home() {
               </View>
             </View>
           </View>
-
+          <TouchableOpacity onPress={seedTestData}>
+            <Text style={{ color: "red" }}>Seed Test Data</Text>
+          </TouchableOpacity>
           {/* AI Insights */}
           <View style={[styles.card, { gap: 8 }]}>
             <Text style={styles.AiInsightTitle}>LAKSH INSIGHT</Text>
@@ -153,6 +181,18 @@ export default function Home() {
               <Text style={styles.AiInsightValue}>"{insight}"</Text>
             </View>
           </View>
+          {todayPatterns.map((pattern) => (
+            <SmartSuggestionCard
+              key={pattern.category}
+              pattern={pattern}
+              onLogNow={() => openSheet(pattern.category)}
+              onDismiss={() =>
+                setDismissedPatterns((prev) =>
+                  new Set(prev).add(pattern.category),
+                )
+              }
+            />
+          ))}
           {/* Recent Expenses */}
           <View
             style={[

@@ -20,6 +20,12 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "queries": [
+    { "package": "in.swiggy.android" },
+    { "package": "com.application.zomato" },
+    { "package": "com.ubercab" },
+    { "package": "com.olacabs.customer" }
+  ],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
