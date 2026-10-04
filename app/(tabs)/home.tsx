@@ -22,6 +22,8 @@ import { useReportStore } from "../storage/useReportStore";
 import WeeklyReportModal from "../components/WeeklyReportModal";
 import { getTodayPatterns } from "../utils/patternDetection";
 import SmartSuggestionCard from "../components/SmartSuggestionCard";
+import { detectFrequentCategories } from "../utils/weeklyFrequency";
+import FrequencyObservationCard from "../components/FrequencyObservationCard";
 export default function Home() {
   const lastSeenWeekKey = useReportStore((s) => s.lastSeenWeekKey);
   const markWeekSeen = useReportStore((s) => s.markWeekSeen);
@@ -51,6 +53,13 @@ export default function Home() {
   const [visible, setVisible] = useState(false);
   const [sheetCategory, setSheetCategory] = useState<Category>("food");
   const [chatVisible, setChatVisible] = useState(false);
+  const [dismissedObservations, setDismissedObservations] = useState<
+    Set<string>
+  >(new Set());
+
+  const observations = detectFrequentCategories(expenses).filter(
+    (o) => !dismissedObservations.has(`${o.category}-${o.weekKey}`),
+  );
   const [dismissedPatterns, setDismissedPatterns] = useState<Set<string>>(
     new Set(),
   );
@@ -189,6 +198,17 @@ export default function Home() {
               onDismiss={() =>
                 setDismissedPatterns((prev) =>
                   new Set(prev).add(pattern.category),
+                )
+              }
+            />
+          ))}
+          {observations.map((obs) => (
+            <FrequencyObservationCard
+              key={obs.category}
+              observation={obs}
+              onDismiss={() =>
+                setDismissedObservations((prev) =>
+                  new Set(prev).add(`${obs.category}-${obs.weekKey}`),
                 )
               }
             />
