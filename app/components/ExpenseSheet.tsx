@@ -28,6 +28,11 @@ import FeedbackBanner from "./FeedbackBanner";
 import { useCommitmentStore } from "../storage/useCommitmentStore";
 import { checkCommitmentViolations } from "../utils/checkCommitment";
 import CommitmentSheet from "./CommitmentSheet";
+import { useCategoryMemoryStore } from "../storage/useCategoryMemoryStore";
+import {
+  extractKeyword,
+  suggestCategoryFromMemory,
+} from "../utils/learnCategory";
 
 export default function ExpenseSheet({
   visible,
@@ -54,9 +59,23 @@ export default function ExpenseSheet({
   const commitments = useCommitmentStore((s) => s.commitments);
   const allExpenses = useExpenseStore((s) => s.expenses);
   const [rulesVisible, setRulesVisible] = useState(false);
+  const memory = useCategoryMemoryStore((s) => s.memory);
+  const learn = useCategoryMemoryStore((s) => s.learn);
+  const [autoSuggested, setAutoSuggested] = useState(false);
+
   useEffect(() => {
     if (visible) setCategory(initialCategory ?? "food");
   }, [visible, initialCategory]);
+
+  useEffect(() => {
+    const suggestion = suggestCategoryFromMemory(note, memory);
+    if (suggestion && suggestion !== category) {
+      setCategory(suggestion);
+      setAutoSuggested(true);
+    } else if (!note.trim()) {
+      setAutoSuggested(false);
+    }
+  }, [note]);
   const handleSave = () => {
     const num = parseFloat(amount);
     if (!num || num <= 0) return setError("Enter a valid amount");
@@ -71,6 +90,9 @@ export default function ExpenseSheet({
       date: date.toISOString(),
     };
     addExpense(newExpense);
+
+    const keyword = extractKeyword(note);
+    if (keyword) learn(keyword, category);
 
     // Check commitments first — they're the strongest, user-opted-in signal
     const violation = checkCommitmentViolations(
@@ -163,7 +185,13 @@ export default function ExpenseSheet({
               marginHorizontal: 20,
             }}
           >
-            <ExpenseItem selected={category} onSelect={setCategory} />
+            <ExpenseItem
+              selected={category}
+              onSelect={(c) => {
+                setCategory(c);
+                setAutoSuggested(false);
+              }}
+            />
           </View>
         </View>
 
@@ -182,6 +210,19 @@ export default function ExpenseSheet({
               placeholder="Add Details"
               placeholderTextColor={colors.textMuted}
             />
+            {autoSuggested && (
+              <Text
+                style={{
+                  color: "#8A8B91",
+                  fontSize: 11,
+                  marginHorizontal: 20,
+                  marginTop: -4,
+                }}
+              >
+                Auto-categorized based on past entries — tap a category to
+                override
+              </Text>
+            )}
           </View>
           <View style={{}}>
             <Text style={styles.label}>DATE</Text>
