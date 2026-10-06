@@ -24,6 +24,7 @@ import { getTodayPatterns } from "../utils/patternDetection";
 import SmartSuggestionCard from "../components/SmartSuggestionCard";
 import { detectFrequentCategories } from "../utils/weeklyFrequency";
 import FrequencyObservationCard from "../components/FrequencyObservationCard";
+import ImportStatementSheet from "../components/ImportStatementSheet";
 export default function Home() {
   const lastSeenWeekKey = useReportStore((s) => s.lastSeenWeekKey);
   const markWeekSeen = useReportStore((s) => s.markWeekSeen);
@@ -34,7 +35,13 @@ export default function Home() {
     if (r && r.weekKey !== lastSeenWeekKey) {
       setReport(r);
     }
-  }, []); // run once when Home mounts
+  }, []);
+
+  useEffect(() => {
+    if (!hasOnboarded) {
+      setImportVisible(true); // shows automatically on first-ever Home load
+    }
+  }, []);
   const renderItem = ({ item }: { item: (typeof DATA)[number] }) => (
     <TouchableOpacity
       style={styles.ExpenseCard}
@@ -56,6 +63,9 @@ export default function Home() {
   const [dismissedObservations, setDismissedObservations] = useState<
     Set<string>
   >(new Set());
+  const hasOnboarded = useSettingsStore((s) => s.hasOnboarded);
+  const setOnboarded = useSettingsStore((s) => s.setOnboarded);
+  const [importVisible, setImportVisible] = useState(false);
 
   const observations = detectFrequentCategories(expenses).filter(
     (o) => !dismissedObservations.has(`${o.category}-${o.weekKey}`),
@@ -143,6 +153,20 @@ export default function Home() {
             >
               <Ionicons name="add-outline" size={18} color="black" />
               <Text style={{ fontWeight: "700" }}>Log an expense</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setImportVisible(true)}
+              style={{ marginTop: 10, alignItems: "center" }}
+            >
+              <Text
+                style={{
+                  color: "#D6C3B1",
+                  fontSize: 12,
+                  textDecorationLine: "underline",
+                }}
+              >
+                Import bank statement
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -268,6 +292,13 @@ export default function Home() {
         onClose={() => {
           if (report) markWeekSeen(report.weekKey);
           setReport(null);
+        }}
+      />
+      <ImportStatementSheet
+        visible={importVisible}
+        onClose={() => {
+          setImportVisible(false);
+          if (!hasOnboarded) setOnboarded(true);
         }}
       />
     </SafeAreaView>
