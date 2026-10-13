@@ -33,6 +33,7 @@ import {
   extractKeyword,
   suggestCategoryFromMemory,
 } from "../utils/learnCategory";
+import { useNotificationStore } from "../storage/useNotificationStore";
 
 export default function ExpenseSheet({
   visible,
@@ -61,6 +62,7 @@ export default function ExpenseSheet({
   const [rulesVisible, setRulesVisible] = useState(false);
   const memory = useCategoryMemoryStore((s) => s.memory);
   const learn = useCategoryMemoryStore((s) => s.learn);
+  const addNotification = useNotificationStore((s) => s.addNotification);
   const [autoSuggested, setAutoSuggested] = useState(false);
 
   useEffect(() => {
@@ -111,6 +113,12 @@ export default function ExpenseSheet({
         activeGoal,
       });
     setFeedback(fb);
+
+    addNotification({
+      type: fb.tone === "warning" ? "budget" : "goal",
+      title: fb.tone === "warning" ? "Budget alert" : "Spending update",
+      message: fb.message,
+    });
 
     setAmount("");
     setNote("");

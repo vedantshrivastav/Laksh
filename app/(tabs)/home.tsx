@@ -25,15 +25,22 @@ import SmartSuggestionCard from "../components/SmartSuggestionCard";
 import { detectFrequentCategories } from "../utils/weeklyFrequency";
 import FrequencyObservationCard from "../components/FrequencyObservationCard";
 import ImportStatementSheet from "../components/ImportStatementSheet";
+import { useNotificationStore } from "../storage/useNotificationStore";
 export default function Home() {
   const lastSeenWeekKey = useReportStore((s) => s.lastSeenWeekKey);
   const markWeekSeen = useReportStore((s) => s.markWeekSeen);
+  const addNotification = useNotificationStore((s) => s.addNotification);
   const [report, setReport] = useState<WeeklyReport | null>(null);
 
   useEffect(() => {
     const r = generateWeeklyReport(expenses);
     if (r && r.weekKey !== lastSeenWeekKey) {
       setReport(r);
+      addNotification({
+        type: "weekly_report",
+        title: "Your week in money",
+        message: r.message,
+      });
     }
   }, []);
 
