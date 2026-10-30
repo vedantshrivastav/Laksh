@@ -211,11 +211,11 @@ export default function Home() {
               </View>
             </View>
           </View>
-          {__DEV__ && (
+          {/* {__DEV__ && (
             <TouchableOpacity onPress={seedTestData}>
               <Text style={{ color: "red" }}>Seed Test Data</Text>
             </TouchableOpacity>
-          )}
+          )} */}
           {/* AI Insights */}
           <View style={[styles.card, { gap: 8 }]}>
             <Text style={styles.AiInsightTitle}>LAKSH INSIGHT</Text>
