@@ -4,6 +4,7 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -15,17 +16,37 @@ import {
   spacing,
   radius,
 } from "./constants/theme";
+import { api, ApiError } from "./utils/api";
 
 export default function EnterPhone() {
   const router = useRouter();
   const [phone, setPhone] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [slow, setSlow] = useState(false);
+  const [error, setError] = useState("");
 
-  const isValid = phone.length === 10;
+  const isValid = phone.length === 10 && /^[6-9]/.test(phone);
 
-  const handleSendOTP = () => {
-    if (!isValid) return;
-    // Mock — just navigate to verify screen
-    router.push("/verify-otp");
+  const handleSendOTP = async () => {
+    if (!isValid || loading) return;
+
+    setLoading(true);
+    setError("");
+    // A free-tier server can take a while to wake up on the first request
+    const slowTimer = setTimeout(() => setSlow(true), 5000);
+
+    try {
+      await api.post("/auth/send-otp", { phone }, { auth: false });
+      router.push({ pathname: "/verify-otp", params: { phone } });
+    } catch (e) {
+      setError(
+        e instanceof ApiError ? e.message : "Something went wrong. Try again.",
+      );
+    } finally {
+      clearTimeout(slowTimer);
+      setSlow(false);
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,19 +72,36 @@ export default function EnterPhone() {
             keyboardType="phone-pad"
             maxLength={10}
             value={phone}
-            onChangeText={setPhone}
+            onChangeText={(t) => {
+              setPhone(t.replace(/\D/g, ""));
+              setError("");
+            }}
+            editable={!loading}
           />
         </View>
 
+        {/* Error */}
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
         {/* CTA */}
         <TouchableOpacity
-          style={[styles.btn, !isValid && styles.btnDisabled]}
+          style={[styles.btn, (!isValid || loading) && styles.btnDisabled]}
           onPress={handleSendOTP}
-          disabled={!isValid}
+          disabled={!isValid || loading}
           activeOpacity={0.85}
         >
-          <Text style={styles.btnText}>Send OTP</Text>
+          {loading ? (
+            <ActivityIndicator color={colors.background} />
+          ) : (
+            <Text style={styles.btnText}>Send OTP</Text>
+          )}
         </TouchableOpacity>
+
+        {slow && (
+          <Text style={styles.slowNote}>
+            Waking up the server, this can take up to a minute the first time.
+          </Text>
+        )}
 
         <Text style={styles.disclaimer}>
           By continuing you agree to our Terms & Privacy Policy
@@ -127,6 +165,13 @@ const styles = StyleSheet.create({
     borderColor: colors.surfaceBorder,
     letterSpacing: 2,
   },
+  error: {
+    fontFamily: fontFamily.regular,
+    fontSize: fontSize.sm,
+    color: colors.danger,
+    textAlign: "center",
+    marginBottom: spacing.lg,
+  },
   btn: {
     backgroundColor: colors.accent,
     borderRadius: radius.lg,
@@ -141,6 +186,13 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.semibold,
     fontSize: fontSize.md,
     color: colors.background,
+  },
+  slowNote: {
+    fontFamily: fontFamily.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    textAlign: "center",
+    marginBottom: spacing.lg,
   },
   disclaimer: {
     fontFamily: fontFamily.regular,

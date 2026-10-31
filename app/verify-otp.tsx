@@ -4,11 +4,12 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
+  ActivityIndicator,
   NativeSyntheticEvent,
   TextInputKeyPressEventData,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useRef, useState } from "react";
 import {
   colors,
@@ -17,23 +18,40 @@ import {
   spacing,
   radius,
 } from "./constants/theme";
+import { api, ApiError } from "./utils/api";
+import { useAuthStore, type AuthUser } from "./storage/useAuthStore";
 
-const MOCK_OTP = "1234";
 const OTP_LENGTH = 4;
+
+// The backend's OTP is still mocked, so testers need to be told the code.
+// Set this to false once a real SMS provider is added.
+const SHOW_DEMO_HINT = true;
+
+type VerifyResponse = {
+  token: string;
+  isNewUser: boolean;
+  user: AuthUser;
+};
 
 export default function VerifyOTP() {
   const router = useRouter();
+  const { phone } = useLocalSearchParams<{ phone: string }>();
+  const loginWithToken = useAuthStore((s) => s.loginWithToken);
+
   const [otp, setOtp] = useState<string[]>(["", "", "", ""]);
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
+  const [loading, setLoading] = useState(false);
   const inputs = useRef<(TextInput | null)[]>([]);
 
   const handleChange = (value: string, index: number) => {
-    if (!/^\d*$/.test(value)) return;
+    if (!/^\d*$/.test(value) || loading) return;
 
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
     setError("");
+    setInfo("");
 
     // Auto advance
     if (value && index < OTP_LENGTH - 1) {
@@ -42,8 +60,7 @@ export default function VerifyOTP() {
 
     // Auto verify when all filled
     if (value && index === OTP_LENGTH - 1) {
-      const entered = [...newOtp.slice(0, 3), value].join("");
-      verifyOTP(entered);
+      verifyOTP(newOtp.join(""));
     }
   };
 
@@ -56,18 +73,44 @@ export default function VerifyOTP() {
     }
   };
 
-  const verifyOTP = (entered: string) => {
-    if (entered === MOCK_OTP) {
-      router.replace("/(tabs)/home");
-    } else {
-      setError("Incorrect OTP. Use 1234 for demo.");
+  const verifyOTP = async (entered: string) => {
+    if (loading) return;
+    if (!phone) {
+      setError("Phone number missing. Go back and try again.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    try {
+      const res = await api.post<VerifyResponse>(
+        "/auth/verify-otp",
+        { phone, otp: entered },
+        { auth: false },
+      );
+      // Saving the session flips the layout's auth guard, which moves the user
+      // to the tabs on its own. No manual navigation needed here.
+      await loginWithToken(res.token, res.user);
+    } catch (e) {
+      setError(
+        e instanceof ApiError ? e.message : "Something went wrong. Try again.",
+      );
       setOtp(["", "", "", ""]);
       inputs.current[0]?.focus();
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleVerify = () => {
-    verifyOTP(otp.join(""));
+  const handleResend = async () => {
+    if (!phone || loading) return;
+    setError("");
+    try {
+      await api.post("/auth/send-otp", { phone }, { auth: false });
+      setInfo("A new code has been sent.");
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Couldn't resend the code.");
+    }
   };
 
   const isComplete = otp.every((d) => d !== "");
@@ -84,8 +127,9 @@ export default function VerifyOTP() {
         <View style={styles.top}>
           <Text style={styles.title}>Verify OTP</Text>
           <Text style={styles.subtitle}>
-            Enter the 4-digit code sent to your phone
+            Enter the 4-digit code sent to +91 {phone}
           </Text>
+          {SHOW_DEMO_HINT && <Text style={styles.hint}>Demo code: 1234</Text>}
         </View>
 
         {/* OTP Boxes */}
@@ -93,7 +137,9 @@ export default function VerifyOTP() {
           {otp.map((digit, index) => (
             <TextInput
               key={index}
-              ref={(ref) => (inputs.current[index] = ref)}
+              ref={(ref) => {
+                inputs.current[index] = ref;
+              }}
               style={[styles.otpBox, digit ? styles.otpBoxFilled : null]}
               value={digit}
               onChangeText={(val) => handleChange(val.slice(-1), index)}
@@ -102,25 +148,31 @@ export default function VerifyOTP() {
               maxLength={1}
               textAlign="center"
               autoFocus={index === 0}
+              editable={!loading}
             />
           ))}
         </View>
 
-        {/* Error */}
+        {/* Error / info */}
         {error ? <Text style={styles.error}>{error}</Text> : null}
+        {info ? <Text style={styles.info}>{info}</Text> : null}
 
         {/* CTA */}
         <TouchableOpacity
-          style={[styles.btn, !isComplete && styles.btnDisabled]}
-          onPress={handleVerify}
-          disabled={!isComplete}
+          style={[styles.btn, (!isComplete || loading) && styles.btnDisabled]}
+          onPress={() => verifyOTP(otp.join(""))}
+          disabled={!isComplete || loading}
           activeOpacity={0.85}
         >
-          <Text style={styles.btnText}>Verify</Text>
+          {loading ? (
+            <ActivityIndicator color={colors.background} />
+          ) : (
+            <Text style={styles.btnText}>Verify</Text>
+          )}
         </TouchableOpacity>
 
         {/* Resend */}
-        <TouchableOpacity>
+        <TouchableOpacity onPress={handleResend} disabled={loading}>
           <Text style={styles.resend}>Resend OTP</Text>
         </TouchableOpacity>
       </View>
@@ -164,6 +216,12 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 20,
   },
+  hint: {
+    fontFamily: fontFamily.medium,
+    fontSize: fontSize.sm,
+    color: colors.accent,
+    marginTop: spacing.sm,
+  },
   otpRow: {
     flexDirection: "row",
     gap: spacing.md,
@@ -189,6 +247,13 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.regular,
     fontSize: fontSize.sm,
     color: colors.danger,
+    textAlign: "center",
+    marginBottom: spacing.lg,
+  },
+  info: {
+    fontFamily: fontFamily.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
     textAlign: "center",
     marginBottom: spacing.lg,
   },
