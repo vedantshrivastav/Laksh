@@ -10,6 +10,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { useAuthStore } from "./storage/useAuthStore";
+import { useExpenseStore } from "./storage/useExpenseStore";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -36,6 +37,13 @@ export default function RootLayout() {
     if (ready) SplashScreen.hideAsync();
   }, [ready]);
 
+  useEffect(() => {
+    if (status === "loggedIn") {
+      useExpenseStore.getState().fetchExpenses();
+    } else if (status === "loggedOut") {
+      useExpenseStore.getState().reset(); // so the next user never sees the last user's data
+    }
+  }, [status]);
   if (!ready) return null;
 
   const isLoggedIn = status === "loggedIn";

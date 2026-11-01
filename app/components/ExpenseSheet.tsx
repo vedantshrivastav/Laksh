@@ -6,6 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   Pressable,
+  Alert,
 } from "react-native";
 import {
   colors,
@@ -91,7 +92,12 @@ export default function ExpenseSheet({
       note: note.trim(),
       date: date.toISOString(),
     };
-    addExpense(newExpense);
+    addExpense(newExpense).catch((e) =>
+      Alert.alert(
+        "Couldn't save expense",
+        e instanceof Error ? e.message : "Try again",
+      ),
+    );
 
     const keyword = extractKeyword(note);
     if (keyword) learn(keyword, category);
