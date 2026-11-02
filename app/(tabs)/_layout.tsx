@@ -25,7 +25,7 @@ export default function TabLayout() {
           options={{
             title: "Home",
             tabBarIcon: ({ color }) => (
-              <Ionicons name="home" size={24} color={color} />
+              <Ionicons name="home" size={24} color={String(color)} />
             ),
           }}
         />
@@ -34,7 +34,11 @@ export default function TabLayout() {
           options={{
             title: "Goals",
             tabBarIcon: ({ color }) => (
-              <Ionicons name="checkmark-circle" size={24} color={color} />
+              <Ionicons
+                name="checkmark-circle"
+                size={24}
+                color={String(color)}
+              />
             ),
           }}
         />
@@ -43,7 +47,11 @@ export default function TabLayout() {
           options={{
             title: "Insights",
             tabBarIcon: ({ color }) => (
-              <Ionicons name="bar-chart" size={24} color={color} />
+              <Ionicons
+                name="bar-chart"
+                size={24}
+                color={String(color ?? "#000")}
+              />
             ),
           }}
         />
@@ -52,12 +60,12 @@ export default function TabLayout() {
           options={{
             title: "Rewards",
             tabBarIcon: ({ color }) => (
-              <Ionicons name="gift" size={24} color={color} />
+              <Ionicons name="gift" size={24} color={String(color)} />
             ),
           }}
         />
       </Tabs>
-      <TouchableOpacity
+      {/* <TouchableOpacity
         style={{
           position: "absolute",
           bottom: 21,
@@ -75,7 +83,7 @@ export default function TabLayout() {
       >
         <Ionicons name="add" size={18} color="black" />
       </TouchableOpacity>
-      <ExpenseSheet visible={visible} onClose={() => setVisible(false)} />
+      <ExpenseSheet visible={visible} onClose={() => setVisible(false)} /> */}
     </View>
   );
 }
