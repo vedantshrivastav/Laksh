@@ -74,25 +74,6 @@ export default function TabLayout() {
           }}
         />
       </Tabs>
-      {/* <TouchableOpacity
-        style={{
-          position: "absolute",
-          bottom: 21,
-          alignSelf: "center",
-          width: 40,
-          height: 40,
-          borderRadius: 30,
-          backgroundColor: "#F5B65A",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-        onPress={() => {
-          setVisible(true);
-        }}
-      >
-        <Ionicons name="add" size={18} color="black" />
-      </TouchableOpacity>
-      <ExpenseSheet visible={visible} onClose={() => setVisible(false)} /> */}
     </View>
   );
 }

@@ -23,6 +23,7 @@ type AuthStore = {
   bootstrap: () => Promise<void>;
   loginWithToken: (token: string, user: AuthUser) => Promise<void>;
   logout: () => Promise<void>;
+  updateName: (name: string) => Promise<void>;
 };
 
 // Not persisted on purpose: the JWT itself lives in AsyncStorage (see utils/api.ts),
@@ -62,6 +63,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
   logout: async () => {
     await clearToken();
     set({ status: "loggedOut", user: null });
+  },
+
+  updateName: async (name) => {
+    const user = await api.patch<AuthUser>("/auth/me", { name });
+    set({ user });
   },
 }));
 
