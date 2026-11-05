@@ -11,6 +11,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { useAuthStore } from "./storage/useAuthStore";
 import { useExpenseStore } from "./storage/useExpenseStore";
+import { useGoalStore } from "./storage/useGoalStore";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -40,8 +41,10 @@ export default function RootLayout() {
   useEffect(() => {
     if (status === "loggedIn") {
       useExpenseStore.getState().fetchExpenses();
+      useGoalStore.getState().fetchGoals();
     } else if (status === "loggedOut") {
-      useExpenseStore.getState().reset(); // so the next user never sees the last user's data
+      useExpenseStore.getState().reset();
+      useGoalStore.getState().reset();
     }
   }, [status]);
   if (!ready) return null;

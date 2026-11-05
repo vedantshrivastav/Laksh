@@ -15,6 +15,7 @@ import { Goal, useGoalStore } from "../storage/useGoalStore";
 import { goalStats } from "../utils/goalMath";
 import AddGoalSheet from "../components/AddGoalSheet";
 import ContributeSheet from "../components/ContributeSheet";
+import { alertError } from "../utils/alert";
 
 // ── color tokens ─────────────────────────────────────────────────────────────
 const colors = {
@@ -161,7 +162,12 @@ export default function Goals() {
   const confirmDelete = (g: Goal) =>
     Alert.alert("Delete goal?", `${g.emoji} ${g.name}`, [
       { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => deleteGoal(g.id) },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () =>
+          deleteGoal(g.id).catch(alertError("Couldn't delete goal")),
+      },
     ]);
 
   const renderActiveGoal = (g: Goal) => {
@@ -231,7 +237,9 @@ export default function Goals() {
         key={g.id}
         style={styles.smallCard}
         activeOpacity={0.85}
-        onPress={() => setActiveGoal(g.id)}
+        onPress={() =>
+          setActiveGoal(g.id).catch(alertError("Couldn't switch goal"))
+        }
         onLongPress={() => confirmDelete(g)}
       >
         <GoalIcon emoji={g.emoji} />

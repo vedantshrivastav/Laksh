@@ -13,6 +13,7 @@ import { colors, fontFamily, radius } from "../constants/theme";
 import Divider from "../common/Divider";
 import { useGoalStore } from "../storage/useGoalStore";
 import type { Goal } from "../storage/useGoalStore";
+import { alertError } from "../utils/alert";
 
 const QUICK_AMOUNTS = [100, 500, 1000];
 
@@ -48,7 +49,9 @@ export default function ContributeSheet({
     if (remaining <= 0) return setError("This goal is already complete");
 
     // The store also caps at the target, this just keeps the UI honest
-    contribute(goal.id, Math.min(amt, remaining));
+    contribute(goal.id, Math.min(amt, remaining)).catch(
+      alertError("Couldn't add money"),
+    );
 
     setAmount("");
     setError("");
