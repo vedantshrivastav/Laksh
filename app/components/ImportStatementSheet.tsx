@@ -96,8 +96,6 @@ export default function ImportStatementSheet({
         note: r.description,
         date: r.date,
       });
-      const keyword = extractKeyword(r.description);
-      if (keyword) learn(keyword, r.suggestedCategory);
     });
 
     Alert.alert(

@@ -16,6 +16,7 @@ import Divider from "../common/Divider";
 import DATA from "../constants/expenseData";
 import type { Category } from "../storage/useExpenseStore";
 import { useCommitmentStore } from "../storage/useCommitmentStore";
+import { alertError } from "../utils/alert";
 
 export default function CommitmentSheet({
   visible,
@@ -37,7 +38,9 @@ export default function CommitmentSheet({
     const n = parseInt(maxCount, 10);
     if (!n || n <= 0) return setError("Enter a valid number");
 
-    addCommitment({ category, maxCount: n, period });
+    addCommitment({ category, maxCount: n, period }).catch(
+      alertError("Couldn't add rule"),
+    );
     setMaxCount("3");
     setError("");
   };
@@ -76,7 +79,10 @@ export default function CommitmentSheet({
                         {
                           text: "Remove",
                           style: "destructive",
-                          onPress: () => deleteCommitment(c.id),
+                          onPress: () =>
+                            deleteCommitment(c.id).catch(
+                              alertError("Couldn't remove rule"),
+                            ),
                         },
                       ])
                     }

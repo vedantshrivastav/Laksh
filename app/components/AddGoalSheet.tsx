@@ -14,6 +14,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { colors, fontFamily, radius } from "../constants/theme";
 import Divider from "../common/Divider";
 import { useGoalStore } from "../storage/useGoalStore";
+import { alertError } from "../utils/alert";
 
 const EMOJIS = ["🎯", "💻", "🏠", "✈️", "🛡️", "📱"];
 
@@ -67,7 +68,7 @@ export default function AddGoalSheet({
       targetAmount: amt,
       startDate: new Date().toISOString(),
       targetDate: targetDate.toISOString(),
-    });
+    }).catch(alertError("Couldn't create goal"));
 
     reset();
     onClose();

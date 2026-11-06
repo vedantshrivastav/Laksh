@@ -12,6 +12,7 @@ import { useEffect } from "react";
 import { useAuthStore } from "./storage/useAuthStore";
 import { useExpenseStore } from "./storage/useExpenseStore";
 import { useGoalStore } from "./storage/useGoalStore";
+import { loadAllData, resetAllData } from "./storage/sessionData";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -39,13 +40,8 @@ export default function RootLayout() {
   }, [ready]);
 
   useEffect(() => {
-    if (status === "loggedIn") {
-      useExpenseStore.getState().fetchExpenses();
-      useGoalStore.getState().fetchGoals();
-    } else if (status === "loggedOut") {
-      useExpenseStore.getState().reset();
-      useGoalStore.getState().reset();
-    }
+    if (status === "loggedIn") loadAllData();
+    else if (status === "loggedOut") resetAllData();
   }, [status]);
   if (!ready) return null;
 

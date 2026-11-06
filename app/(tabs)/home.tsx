@@ -27,12 +27,19 @@ import FrequencyObservationCard from "../components/FrequencyObservationCard";
 import ImportStatementSheet from "../components/ImportStatementSheet";
 import { useNotificationStore } from "../storage/useNotificationStore";
 export default function Home() {
-  const lastSeenWeekKey = useReportStore((s) => s.lastSeenWeekKey);
-  const markWeekSeen = useReportStore((s) => s.markWeekSeen);
+  const lastSeenWeekKey = useSettingsStore((s) => s.lastSeenWeekKey);
+  const markWeekSeen = useSettingsStore((s) => s.markWeekSeen);
   const addNotification = useNotificationStore((s) => s.addNotification);
+  const settingsLoaded = useSettingsStore((s) => s.loaded);
+  const expensesLoaded = useExpenseStore((s) => s.loaded);
   const [report, setReport] = useState<WeeklyReport | null>(null);
 
   useEffect(() => {
+    if (settingsLoaded && !hasOnboarded) setImportVisible(true);
+  }, [settingsLoaded]);
+
+  useEffect(() => {
+    if (!expensesLoaded || !settingsLoaded) return;
     const r = generateWeeklyReport(expenses);
     if (r && r.weekKey !== lastSeenWeekKey) {
       setReport(r);
@@ -42,13 +49,7 @@ export default function Home() {
         message: r.message,
       });
     }
-  }, []);
-
-  useEffect(() => {
-    if (!hasOnboarded) {
-      setImportVisible(true); // shows automatically on first-ever Home load
-    }
-  }, []);
+  }, [expensesLoaded, settingsLoaded]);
   const renderItem = ({ item }: { item: (typeof DATA)[number] }) => (
     <TouchableOpacity
       style={styles.ExpenseCard}
