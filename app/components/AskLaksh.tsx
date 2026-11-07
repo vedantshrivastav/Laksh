@@ -12,23 +12,25 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRef, useState } from "react";
-import { colors, fontFamily, radius } from "../constants/theme";
+import { colors, radius } from "../constants/theme";
 import { useExpenseStore } from "../storage/useExpenseStore";
 import { useGoalStore } from "../storage/useGoalStore";
 import { useSettingsStore } from "../storage/useSettingsStore";
 import { answerQuery } from "../utils/queryAgent";
+import { askLLM } from "../utils/llmAgent";
 
 type Message = {
   id: string;
   from: "user" | "laksh";
   text: string;
+  offline?: boolean; // true when the answer came from the on-device fallback
 };
 
 const SUGGESTIONS = [
   "How much did I spend today?",
   "How's my goal going?",
   "What's my current streak?",
-  "Budget left this month?",
+  "Am I doing okay this month?",
 ];
 
 export default function AskLaksh({
@@ -51,36 +53,56 @@ export default function AskLaksh({
     },
   ]);
   const [input, setInput] = useState("");
+  const [thinking, setThinking] = useState(false);
   const listRef = useRef<FlatList>(null);
+  const idCounter = useRef(0);
+  const nextId = () => String(++idCounter.current);
 
-  const send = (text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed) return;
-
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      from: "user",
-      text: trimmed,
-    };
-    const answer = answerQuery(trimmed, {
-      expenses,
-      goals,
-      activeGoalId,
-      monthlyBudget,
-    });
-    const agentMsg: Message = {
-      id: Date.now().toString() + "-a",
-      from: "laksh",
-      text: answer,
-    };
-
-    setMessages((prev) => [...prev, userMsg, agentMsg]);
-    setInput("");
+  const scrollToEnd = () =>
     setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
+
+  const send = async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || thinking) return;
+
+    setMessages((prev) => [
+      ...prev,
+      { id: nextId(), from: "user", text: trimmed },
+    ]);
+    setInput("");
+    setThinking(true);
+    scrollToEnd();
+
+    // 1. Try the real AI on the backend
+    const llmAnswer = await askLLM(trimmed);
+
+    // 2. If that fails (offline, rate limit, server asleep), answer from on-device data
+    const reply: Message = llmAnswer
+      ? { id: nextId(), from: "laksh", text: llmAnswer }
+      : {
+          id: nextId(),
+          from: "laksh",
+          text: answerQuery(trimmed, {
+            expenses,
+            goals,
+            activeGoalId,
+            monthlyBudget,
+          }),
+          offline: true,
+        };
+
+    setMessages((prev) => [...prev, reply]);
+    setThinking(false);
+    scrollToEnd();
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
       <Pressable style={styles.overlay} onPress={onClose} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -114,8 +136,18 @@ export default function AskLaksh({
               >
                 {item.text}
               </Text>
+              {item.offline && (
+                <Text style={styles.offlineTag}>Answered offline</Text>
+              )}
             </View>
           )}
+          ListFooterComponent={
+            thinking ? (
+              <View style={[styles.bubble, styles.agentBubble]}>
+                <Text style={styles.agentText}>Laksh is thinking...</Text>
+              </View>
+            ) : null
+          }
           onContentSizeChange={() =>
             listRef.current?.scrollToEnd({ animated: true })
           }
@@ -146,10 +178,12 @@ export default function AskLaksh({
             placeholderTextColor={colors.textMuted}
             onSubmitEditing={() => send(input)}
             returnKeyType="send"
+            maxLength={300}
           />
           <TouchableOpacity
-            style={styles.sendButton}
+            style={[styles.sendButton, thinking && { opacity: 0.5 }]}
             onPress={() => send(input)}
+            disabled={thinking}
           >
             <Ionicons name="arrow-up" size={20} color="black" />
           </TouchableOpacity>
@@ -215,6 +249,11 @@ const styles = StyleSheet.create({
   agentText: {
     color: colors.textPrimary,
   },
+  offlineTag: {
+    color: colors.textMuted,
+    fontSize: 10,
+    marginTop: 6,
+  },
   suggestionRow: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -225,7 +264,7 @@ const styles = StyleSheet.create({
   suggestionChip: {
     borderWidth: 1,
     borderColor: "#524437",
-    borderRadius: radius.full ?? 20,
+    borderRadius: radius.full,
     paddingVertical: 6,
     paddingHorizontal: 12,
   },
